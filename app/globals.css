@@ -1,0 +1,32 @@
+@import "tailwindcss";
+
+:root {
+  --ink: #17201f;
+  --muted: #63706d;
+  --line: #dbe4df;
+  --paper: #f7faf7;
+  --panel: #ffffff;
+  --accent: #117c69;
+  --accent-dark: #0c5d50;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  background: var(--paper);
+  color: var(--ink);
+  font-family: Arial, "Noto Sans TC", "Microsoft JhengHei", sans-serif;
+}
+
+a {
+  color: inherit;
+  text-decoration: none;
+}
+
+button,
+a {
+  transition: border-color 160ms ease, background-color 160ms ease, color 160ms ease;
+}

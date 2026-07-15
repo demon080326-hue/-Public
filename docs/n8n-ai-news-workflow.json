@@ -1,0 +1,252 @@
+{
+  "name": "AI News RSS to Ingest",
+  "nodes": [
+    {
+      "parameters": {},
+      "id": "manual-trigger",
+      "name": "Manual Trigger",
+      "type": "n8n-nodes-base.manualTrigger",
+      "typeVersion": 1,
+      "position": [
+        0,
+        -120
+      ]
+    },
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "days",
+              "daysInterval": 3,
+              "triggerAtHour": 9
+            }
+          ]
+        }
+      },
+      "id": "schedule-trigger-every-3-days",
+      "name": "Schedule Trigger - Every 3 Days",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.2,
+      "position": [
+        0,
+        120
+      ]
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "ingest-api-url",
+              "name": "ingestApiUrl",
+              "type": "string",
+              "value": "https://YOUR_DOMAIN.com/api/ai-news/ingest"
+            },
+            {
+              "id": "ingest-secret",
+              "name": "aiNewsIngestSecret",
+              "type": "string",
+              "value": "PASTE_YOUR_AI_NEWS_INGEST_SECRET_HERE"
+            },
+            {
+              "id": "rss-url",
+              "name": "rssUrl",
+              "type": "string",
+              "value": "https://huggingface.co/blog/feed.xml"
+            },
+            {
+              "id": "source-name",
+              "name": "source",
+              "type": "string",
+              "value": "Hugging Face"
+            },
+            {
+              "id": "category",
+              "name": "category",
+              "type": "string",
+              "value": "開源專案"
+            },
+            {
+              "id": "max-items",
+              "name": "maxItems",
+              "type": "number",
+              "value": 1
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "set-rss-source",
+      "name": "Set RSS Source",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        260,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "url": "={{ $json.rssUrl }}",
+        "options": {
+          "response": {
+            "response": {
+              "responseFormat": "text"
+            }
+          },
+          "timeout": 30000
+        }
+      },
+      "id": "fetch-rss",
+      "name": "Fetch RSS",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        520,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "const config = $('Set RSS Source').first().json;\nconst xml = String($json.data ?? $json.body ?? $json.response ?? $json ?? '');\n\nfunction decode(value) {\n  return String(value ?? '')\n    .replace(/<!\\[CDATA\\[([\\s\\S]*?)\\]\\]>/g, '$1')\n    .replace(/&amp;/g, '&')\n    .replace(/&lt;/g, '<')\n    .replace(/&gt;/g, '>')\n    .replace(/&quot;/g, '\"')\n    .replace(/&#39;/g, \"'\")\n    .trim();\n}\n\nfunction stripHtml(value) {\n  return decode(value)\n    .replace(/<script[\\s\\S]*?<\\/script>/gi, '')\n    .replace(/<style[\\s\\S]*?<\\/style>/gi, '')\n    .replace(/<[^>]+>/g, ' ')\n    .replace(/\\s+/g, ' ')\n    .trim();\n}\n\nfunction tag(block, name) {\n  const match = block.match(new RegExp(`<${name}[^>]*>([\\\\s\\\\S]*?)<\\\\/${name}>`, 'i'));\n  return match ? decode(match[1]) : '';\n}\n\nfunction normalizeUrl(value) {\n  try {\n    const url = new URL(value);\n    for (const key of [...url.searchParams.keys()]) {\n      if (key.startsWith('utm_') || key === 'ref' || key === 'fbclid' || key === 'gclid') {\n        url.searchParams.delete(key);\n      }\n    }\n    url.hash = '';\n    return url.toString().replace(/\\/$/, '');\n  } catch {\n    return value;\n  }\n}\n\nconst itemBlocks = xml.match(/<item[\\s\\S]*?<\\/item>/gi) ?? [];\nconst entryBlocks = xml.match(/<entry[\\s\\S]*?<\\/entry>/gi) ?? [];\nconst blocks = itemBlocks.length ? itemBlocks : entryBlocks;\nconst maxItems = Number(config.maxItems ?? 1);\n\nreturn blocks.slice(0, maxItems).map((block) => {\n  const isAtom = /<entry[\\s\\S]*?<\\/entry>/i.test(block);\n  const title = stripHtml(tag(block, 'title'));\n  const description = stripHtml(tag(block, 'description') || tag(block, 'summary') || tag(block, 'content'));\n  const rssLink = stripHtml(tag(block, 'link'));\n  const atomLinkMatch = block.match(/<link[^>]+href=[\"']([^\"']+)[\"'][^>]*>/i);\n  const sourceUrl = normalizeUrl(isAtom ? decode(atomLinkMatch?.[1] ?? rssLink) : rssLink);\n  const publishedRaw = tag(block, 'pubDate') || tag(block, 'published') || tag(block, 'updated');\n  const publishedAt = Number.isNaN(new Date(publishedRaw).getTime()) ? new Date().toISOString() : new Date(publishedRaw).toISOString();\n\n  return {\n    json: {\n      ingestApiUrl: config.ingestApiUrl,\n      aiNewsIngestSecret: config.aiNewsIngestSecret,\n      title,\n      summary: description || `${title} 的最新 AI 情報更新。`,\n      content: description || `${title} 的 RSS 來源未提供完整內文，請查看原始來源。`,\n      category: config.category || '開源專案',\n      source: config.source,\n      source_url: sourceUrl,\n      image_url: '',\n      published_at: publishedAt,\n      importance_score: 60,\n      is_breaking: false,\n      tags: ['Hugging Face', 'AI 情報', 'RSS']\n    }\n  };\n}).filter((item) => item.json.title && item.json.source_url);"
+      },
+      "id": "rss-to-json",
+      "name": "RSS to JSON",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        780,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $json.ingestApiUrl }}",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Authorization",
+              "value": "={{ 'Bearer ' + $json.aiNewsIngestSecret }}"
+            },
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "contentType": "json",
+        "jsonBody": "={{ { title: $json.title, summary: $json.summary, content: $json.content, category: $json.category, source: $json.source, source_url: $json.source_url, image_url: $json.image_url, published_at: $json.published_at, importance_score: $json.importance_score, is_breaking: $json.is_breaking, tags: $json.tags } }}",
+        "options": {
+          "response": {
+            "response": {
+              "fullResponse": false,
+              "responseFormat": "json"
+            }
+          }
+        }
+      },
+      "id": "send-to-ingest-api",
+      "name": "Send to Ingest API",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        1040,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "return items.map((item) => {\n  const result = item.json;\n  return {\n    json: {\n      ok: result.ok === true,\n      duplicated: result.duplicated === true,\n      id: result.id ?? null,\n      url: result.url ?? null,\n      message: result.message ?? null,\n      details: result.details ?? null,\n      hint: result.hint ?? null,\n      code: result.code ?? null,\n      nextStep: result.ok === true && result.id ? `Open your website /news/${result.id}` : 'Check ingestApiUrl, AI_NEWS_INGEST_SECRET, and API error details.'\n    }\n  };\n});"
+      },
+      "id": "verify-result",
+      "name": "Verify Result",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1300,
+        0
+      ]
+    }
+  ],
+  "connections": {
+    "Manual Trigger": {
+      "main": [
+        [
+          {
+            "node": "Set RSS Source",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Schedule Trigger - Every 3 Days": {
+      "main": [
+        [
+          {
+            "node": "Set RSS Source",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Set RSS Source": {
+      "main": [
+        [
+          {
+            "node": "Fetch RSS",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Fetch RSS": {
+      "main": [
+        [
+          {
+            "node": "RSS to JSON",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "RSS to JSON": {
+      "main": [
+        [
+          {
+            "node": "Send to Ingest API",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Send to Ingest API": {
+      "main": [
+        [
+          {
+            "node": "Verify Result",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "pinData": {},
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "staticData": null,
+  "tags": [],
+  "triggerCount": 0,
+  "updatedAt": "2026-07-15T00:00:00.000Z",
+  "versionId": "ai-news-rss-to-ingest-cloud-import"
+}

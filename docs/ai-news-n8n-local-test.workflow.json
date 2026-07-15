@@ -1,0 +1,164 @@
+{
+  "name": "AI News Ingest Local Test",
+  "nodes": [
+    {
+      "parameters": {},
+      "id": "manual-trigger",
+      "name": "Manual Trigger",
+      "type": "n8n-nodes-base.manualTrigger",
+      "typeVersion": 1,
+      "position": [
+        0,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "ingest-api-url",
+              "name": "ingestApiUrl",
+              "type": "string",
+              "value": "http://localhost:3000/api/ai-news/ingest"
+            },
+            {
+              "id": "ingest-secret",
+              "name": "aiNewsIngestSecret",
+              "type": "string",
+              "value": "PASTE_YOUR_AI_NEWS_INGEST_SECRET_HERE"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "set-local-config",
+      "name": "Set Local Config",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        240,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "const stamp = new Date().toISOString();\nconst safeStamp = stamp.replace(/[:.]/g, '-');\n\nreturn [\n  {\n    json: {\n      ingestApiUrl: $json.ingestApiUrl,\n      aiNewsIngestSecret: $json.aiNewsIngestSecret,\n      payload: {\n        title: `n8n 本機測試 AI 情報 ${safeStamp}`,\n        summary: '這是一筆由 n8n 本機測試工作流送出的繁體中文摘要，用來確認 ingest API 可以正常寫入 Supabase。',\n        content: '這是完整重點整理。測試重點包含：Bearer Token 驗證、JSON 欄位格式、source_url 去重、寫入後可於 /news 前台看到文章。',\n        category: 'AI 平台',\n        source: 'n8n Local Test',\n        source_url: `https://example.com/ai-news-n8n-local-test-${safeStamp}`,\n        image_url: '',\n        published_at: stamp,\n        importance_score: 60,\n        is_breaking: false,\n        tags: ['n8n', 'AI 情報', '本機測試']\n      }\n    }\n  }\n];"
+      },
+      "id": "build-test-payload",
+      "name": "Build Test Payload",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        480,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $json.ingestApiUrl }}",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Authorization",
+              "value": "={{ 'Bearer ' + $json.aiNewsIngestSecret }}"
+            },
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "contentType": "json",
+        "jsonBody": "={{ $json.payload }}",
+        "options": {
+          "response": {
+            "response": {
+              "fullResponse": false,
+              "responseFormat": "json"
+            }
+          }
+        }
+      },
+      "id": "send-to-ingest-api",
+      "name": "Send to Ingest API",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        720,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "return items.map((item) => {\n  const response = item.json;\n  return {\n    json: {\n      ok: response.ok === true,\n      duplicated: response.duplicated === true,\n      id: response.id ?? null,\n      url: response.url ?? null,\n      message: response.message ?? null,\n      details: response.details ?? null,\n      hint: response.hint ?? null,\n      code: response.code ?? null,\n      nextStep: response.ok === true && response.id ? `Open http://localhost:3000/news/${response.id}` : 'Check AI_NEWS_INGEST_SECRET, website server, and API error details.'\n    }\n  };\n});"
+      },
+      "id": "verify-ingest-result",
+      "name": "Verify Ingest Result",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        960,
+        0
+      ]
+    }
+  ],
+  "connections": {
+    "Manual Trigger": {
+      "main": [
+        [
+          {
+            "node": "Set Local Config",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Set Local Config": {
+      "main": [
+        [
+          {
+            "node": "Build Test Payload",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Build Test Payload": {
+      "main": [
+        [
+          {
+            "node": "Send to Ingest API",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Send to Ingest API": {
+      "main": [
+        [
+          {
+            "node": "Verify Ingest Result",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "pinData": {},
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "staticData": null,
+  "tags": [],
+  "triggerCount": 0,
+  "updatedAt": "2026-07-15T00:00:00.000Z",
+  "versionId": "local-ai-news-ingest-test"
+}
