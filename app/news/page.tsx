@@ -2,6 +2,8 @@ import { NewsCard } from "@/components/news-card";
 import { getPublishedNews } from "@/lib/news";
 import type { NewsItem } from "@/types/database";
 
+export const dynamic = "force-dynamic";
+
 export default async function NewsPage() {
   let news: NewsItem[] = [];
   let errorMessage = "";
