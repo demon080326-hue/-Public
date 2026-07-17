@@ -227,15 +227,13 @@ A0 無法從公開 settings 安全讀出的項目，已由使用者本人於 202
 | 沒有建立資料表或 API | ✅ |
 | 沒有修改 Supabase、Secret 或現有功能 | ✅ |
 | Dashboard Provider／URL／Templates／MFA 人工確認 | ✅ |
-| A1 SSR Auth 骨架準備度 | ✅ 可開始，但尚未開始 |
+| A1 SSR Auth 骨架準備度 | ✅ 已完成；詳見 `MEMBER_SYSTEM_A1_AUTH_SSR.md` |
 | Custom SMTP／正式模板／寄信驗收 | ⬜ 公開註冊前完成 |
 | Rate Limits／CAPTCHA／Session 最終值 | ⬜ 正式 Auth 上線前完成 |
 
-## A0 後的最小下一步
+## A0 後續狀態
 
-A0 已具備進入 A1 的條件。A1 只建立正式 Supabase SSR Auth 骨架（session refresh proxy、auth callback 與安全的登入狀態讀取），暫不建立點數、商城、金流或管理員資料表。
-
-目前不開始 A1；必須等待使用者明確要求。
+A0 已完成並於使用者明確要求後進入 A1。A1 已建立 Supabase SSR Auth 骨架、session refresh proxy、auth callback 與安全登入狀態讀取；仍未建立點數、商城、金流或管理員資料表。
 
 ## 官方參考
 

@@ -2371,6 +2371,93 @@ body.menu-open .site-menu { transform: translateX(0); }
   gap: 14px;
 }
 
+.auth-panel {
+  max-width: 680px;
+}
+
+.auth-tabs {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 6px;
+  margin-bottom: 22px;
+  padding: 5px;
+  border-radius: 8px;
+  background: #eef2f0;
+}
+
+.auth-tabs button {
+  min-height: 42px;
+  border: 0;
+  border-radius: 6px;
+  background: transparent;
+  color: var(--text-sub);
+  font: inherit;
+  font-weight: 800;
+  cursor: pointer;
+}
+
+.auth-tabs button.active {
+  background: #fff;
+  color: var(--accent-dark);
+  box-shadow: 0 2px 8px rgba(20, 30, 25, .08);
+}
+
+.auth-form {
+  display: grid;
+  gap: 15px;
+}
+
+.auth-form label {
+  display: grid;
+  gap: 7px;
+  color: var(--text);
+  font-weight: 800;
+}
+
+.auth-form p,
+.auth-security-note {
+  margin: 0;
+  color: var(--text-sub);
+  line-height: 1.7;
+}
+
+.auth-security-note {
+  margin-top: 16px;
+  padding-top: 14px;
+  border-top: 1px solid var(--border);
+  font-size: .9rem;
+}
+
+.auth-user-card {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 24px;
+}
+
+.auth-user-card h2 {
+  margin: 10px 0 4px;
+}
+
+.auth-user-card p {
+  margin: 4px 0 0;
+}
+
+.member-points-mvp {
+  margin-top: 32px;
+  padding-top: 30px;
+  border-top: 1px solid var(--border);
+}
+
+.member-points-heading {
+  margin-bottom: 16px;
+}
+
+.member-points-heading h2 {
+  margin: 10px 0 6px;
+  font-size: clamp(1.6rem, 3vw, 2.2rem);
+}
+
 .member-register-form h2,
 .member-verify-form h2,
 .member-hub-card h2 {
@@ -2543,6 +2630,15 @@ body.menu-open .site-menu { transform: translateX(0); }
   .member-hub-card,
   .access-notice {
     padding: 18px;
+  }
+
+  .auth-tabs {
+    grid-template-columns: 1fr;
+  }
+
+  .auth-user-card {
+    align-items: stretch;
+    flex-direction: column;
   }
 
   .ai-chat-form {

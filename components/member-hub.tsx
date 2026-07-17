@@ -1,8 +1,9 @@
 "use client";
 
 import Link from "next/link";
-import { FormEvent, useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useSiteLanguage } from "@/hooks/use-site-language";
+import type { AuthUserSummary } from "@/lib/auth-user";
 import { translateSiteText } from "@/lib/site-language";
 
 type PointRecord = {
@@ -12,16 +13,14 @@ type PointRecord = {
   date: string;
 };
 
-type MemberProfile = {
-  email: string;
-  verified: boolean;
+type PointProfile = {
   points: number;
   dailyClaimedOn: string | null;
   weeklyClaimedOn: string | null;
   records: PointRecord[];
 };
 
-const storageKey = "james-member-mvp-v2";
+const legacyStorageKey = "james-member-mvp-v2";
 const dailyPoints = 10;
 const weeklyPoints = 30;
 
@@ -39,84 +38,65 @@ function weekKey(date: Date) {
   return utcDate.toISOString().slice(0, 10);
 }
 
-function readProfile(): MemberProfile | null {
+function storageKey(userId: string) {
+  return `james-member-points-mvp-v3:${userId}`;
+}
+
+function emptyProfile(): PointProfile {
+  return { points: 0, dailyClaimedOn: null, weeklyClaimedOn: null, records: [] };
+}
+
+function normalizeProfile(value: Partial<PointProfile> | null): PointProfile {
+  return {
+    points: Number(value?.points ?? 0),
+    dailyClaimedOn: value?.dailyClaimedOn ?? null,
+    weeklyClaimedOn: value?.weeklyClaimedOn ?? null,
+    records: Array.isArray(value?.records) ? value.records : [],
+  };
+}
+
+function readProfile(user: AuthUserSummary): PointProfile {
   try {
-    const value = JSON.parse(localStorage.getItem(storageKey) ?? "null") as Partial<MemberProfile> | null;
-    if (!value?.email) return null;
-    return {
-      email: value.email,
-      verified: Boolean(value.verified),
-      points: Number(value.points ?? 0),
-      dailyClaimedOn: value.dailyClaimedOn ?? null,
-      weeklyClaimedOn: value.weeklyClaimedOn ?? null,
-      records: Array.isArray(value.records) ? value.records : [],
-    };
+    const current = JSON.parse(localStorage.getItem(storageKey(user.id)) ?? "null") as Partial<PointProfile> | null;
+    if (current) return normalizeProfile(current);
+
+    const legacy = JSON.parse(localStorage.getItem(legacyStorageKey) ?? "null") as (Partial<PointProfile> & { email?: string }) | null;
+    if (legacy?.email?.toLowerCase() === user.email.toLowerCase()) return normalizeProfile(legacy);
+    return emptyProfile();
   } catch {
-    return null;
+    return emptyProfile();
   }
 }
 
-function saveProfile(profile: MemberProfile) {
-  localStorage.setItem(storageKey, JSON.stringify(profile));
+function saveProfile(userId: string, profile: PointProfile) {
+  localStorage.setItem(storageKey(userId), JSON.stringify(profile));
 }
 
-export function MemberHub() {
+export function MemberHub({ user }: { user: AuthUserSummary }) {
   const language = useSiteLanguage();
   const t = (text: string) => translateSiteText(text, language);
-  const [profile, setProfile] = useState<MemberProfile | null>(null);
-  const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
-  const [confirmPassword, setConfirmPassword] = useState("");
-  const [code, setCode] = useState("");
-  const [notice, setNotice] = useState("正式會員需要完成 Email 驗證後才會啟用。此頁目前為測試模式，不會寄出真實信件，也不會提供後台或付費內容權限。");
+  const [profile, setProfile] = useState<PointProfile | null>(null);
+  const [notice, setNotice] = useState("點數 MVP 僅儲存在這台裝置，不可兌現或轉移。");
 
   useEffect(() => {
-    const loadProfile = window.setTimeout(() => setProfile(readProfile()), 0);
+    const loadProfile = window.setTimeout(() => setProfile(readProfile(user)), 0);
     return () => window.clearTimeout(loadProfile);
-  }, []);
+  }, [user]);
 
   const today = taipeiDate();
   const thisWeek = weekKey(new Date());
-  const canDailyClaim = Boolean(profile?.verified && profile.dailyClaimedOn !== today);
-  const canWeeklyClaim = Boolean(profile?.verified && profile.weeklyClaimedOn !== thisWeek);
+  const canDailyClaim = Boolean(user.emailVerified && profile && profile.dailyClaimedOn !== today);
+  const canWeeklyClaim = Boolean(user.emailVerified && profile && profile.weeklyClaimedOn !== thisWeek);
   const records = useMemo(() => profile?.records ?? [], [profile]);
 
-  function updateProfile(nextProfile: MemberProfile) {
-    saveProfile(nextProfile);
+  function updateProfile(nextProfile: PointProfile) {
+    saveProfile(user.id, nextProfile);
     setProfile(nextProfile);
   }
 
-  function register(event: FormEvent<HTMLFormElement>) {
-    event.preventDefault();
-    if (password.length < 8) {
-      setNotice("密碼至少需要 8 個字元。此 MVP 不會儲存密碼，正式登入將在 Supabase Auth 上線後啟用。");
-      return;
-    }
-    if (password !== confirmPassword) {
-      setNotice("兩次輸入的密碼不一致，請重新確認。");
-      return;
-    }
-
-    updateProfile({ email: email.trim(), verified: false, points: 0, dailyClaimedOn: null, weeklyClaimedOn: null, records: [] });
-    setPassword("");
-    setConfirmPassword("");
-    setNotice("已寄出 6 位數驗證碼到信箱。信箱驗證功能建置中；目前為測試模式，不會寄出真實 Email。");
-  }
-
-  function verifyCode(event: FormEvent<HTMLFormElement>) {
-    event.preventDefault();
-    if (!profile || !/^\d{6}$/.test(code)) {
-      setNotice("請輸入 6 位數字驗證碼。");
-      return;
-    }
-    updateProfile({ ...profile, verified: true });
-    setCode("");
-    setNotice("已完成測試模式驗證。你現在是已驗證會員，但不具管理後台、付費商品或下載內容的正式權限。");
-  }
-
   function claimPoints(kind: "daily" | "weekly") {
-    if (!profile?.verified) {
-      setNotice("請先完成測試模式的 6 位數 Email 驗證，才能使用點數 MVP。");
+    if (!user.emailVerified || !profile) {
+      setNotice("請先完成正式 Email 確認，才能使用本機點數 MVP。");
       return;
     }
     const isDaily = kind === "daily";
@@ -143,41 +123,12 @@ export function MemberHub() {
   }
 
   return (
-    <section className="member-hub-section">
-      <div className="wrap member-hub">
-        <div className="member-hub-heading">
-          <span className="tag">MEMBER MVP</span>
-          <h1>{t("會員中心")}</h1>
-          <p>{t("正式會員需要完成 Email 驗證後才會啟用。現在是前端測試模式，不會寄信、不會建立正式帳號，也不提供後台、商城或下載解鎖權限。")}</p>
+    <div className="member-points-mvp">
+        <div className="member-hub-heading member-points-heading">
+          <span className="tag">LOCAL POINTS MVP</span>
+          <h2>{t("目前點數")}</h2>
+          <p>{t("點數 MVP 僅儲存在這台裝置，不可兌現或轉移。")}</p>
         </div>
-
-        {!profile ? (
-          <form className="member-hub-card member-register-form" onSubmit={register}>
-            <h2>{t("註冊帳號")}</h2>
-            <p>{t("先申請會員帳號；密碼只在本次表單驗證使用，不會儲存在瀏覽器。")}</p>
-            <label>{t("Email")}<input className="form-input" type="email" value={email} onChange={(event) => setEmail(event.target.value)} required placeholder="you@example.com" /></label>
-            <label>{t("密碼")}<input className="form-input" type="password" value={password} onChange={(event) => setPassword(event.target.value)} minLength={8} required /></label>
-            <label>{t("確認密碼")}<input className="form-input" type="password" value={confirmPassword} onChange={(event) => setConfirmPassword(event.target.value)} minLength={8} required /></label>
-            <button className="btn" type="submit">{t("申請會員帳號")}</button>
-          </form>
-        ) : !profile.verified ? (
-          <form className="member-hub-card member-verify-form" onSubmit={verifyCode}>
-            <span className="tag">PENDING</span>
-            <h2>{t("待驗證會員")}</h2>
-            <p>{profile.email}</p>
-            <p>{t("已寄出 6 位數驗證碼到信箱。信箱驗證功能建置中，請以測試模式完成流程預覽。")}</p>
-            <label>{t("6 位數驗證碼")}<input className="form-input verification-code" inputMode="numeric" pattern="[0-9]{6}" maxLength={6} value={code} onChange={(event) => setCode(event.target.value.replace(/\D/g, "").slice(0, 6))} required placeholder="000000" /></label>
-            <button className="btn" type="submit">{t("驗證帳號（測試模式）")}</button>
-          </form>
-        ) : (
-          <div className="member-summary member-hub-card">
-            <span className="tag">VERIFIED · TEST MODE</span>
-            <h2>{t("已驗證會員")}</h2>
-            <p>{profile.email}</p>
-            <p>{t("這是測試模式會員狀態，不代表完成正式 Email 驗證，也不會開放管理後台、付費商品或下載內容。")}</p>
-          </div>
-        )}
-
         <p className="member-hub-notice" role="status">{t(notice)}</p>
 
         <div className="member-points-grid">
@@ -191,7 +142,6 @@ export function MemberHub() {
           <article className="member-hub-card"><h2>{t("可兌換商品")}</h2><p>{t("商品待研究。目前不提供實體商品、物流、金流或點數兌換。")}</p><span className="member-placeholder">{t("商品待研究")}</span></article>
           <article className="member-hub-card"><h2>{t("會員可瀏覽")}</h2><p>{t("一般會員可查看公開內容；AI 情報、工具與文章不需要付費解鎖。")}</p><div className="member-hub-links"><Link href="/news">{t("AI 情報中心")}</Link><Link href="/tools">{t("AI 工具")}</Link><Link href="/articles">{t("學習文章")}</Link></div></article>
         </div>
-      </div>
-    </section>
+    </div>
   );
 }
