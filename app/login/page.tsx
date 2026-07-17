@@ -12,7 +12,10 @@ function first(value: string | string[] | undefined) {
 }
 
 export default async function LoginPage({ searchParams }: LoginPageProps) {
-  const [member, params] = await Promise.all([getCurrentMemberContext(), searchParams]);
+  const [member, params] = await Promise.all([
+    getCurrentMemberContext({ syncProfileFromAuth: true }),
+    searchParams,
+  ]);
   const noticeValue = first(params.notice);
   const errorValue = first(params.error);
   const initialNotice = noticeValue === "admin-auth-required"

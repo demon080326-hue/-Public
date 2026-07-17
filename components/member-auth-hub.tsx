@@ -15,7 +15,7 @@ type MemberAuthHubProps = {
   initialUser: AuthUserSummary | null;
   initialProfile?: ProfileRow | null;
   profileStatus?: "ready" | "missing" | "error" | null;
-  initialNotice?: "admin-auth-required" | "auth_callback_failed" | "auth-unavailable" | null;
+  initialNotice?: "admin-auth-required" | "auth_callback_failed" | "auth-unavailable" | "email-verified-member" | "email-verification-required" | null;
   showPoints?: boolean;
 };
 
@@ -36,15 +36,21 @@ const copy = {
     signOut: "登出",
     currentUser: "目前登入帳號",
     authConnected: "會員狀態：正式 Supabase Auth 已連線",
+    authEmail: "Auth Email",
+    authEmailConfirmation: "Auth Email 驗證",
     profileReady: "正式會員 Profile 已建立",
     profileMissing: "會員資料建立中，請重新整理或稍後再試。",
     profileRole: "Profile 角色",
     displayName: "顯示名稱",
     displayNameEmpty: "尚未設定",
     databasePoints: "資料庫點數欄位",
-    databasePointsHint: "僅保留欄位，點數資料庫功能尚未啟用",
-    profileVerification: "Profile 驗證同步",
-    profileVerificationPending: "尚未同步；A2 以 Auth Email 狀態為準",
+    databasePointsHint: "點數目前尚未資料庫化，下一階段才會處理正式點數紀錄",
+    profileVerification: "Profile email_verified",
+    activationStatus: "會員啟用狀態",
+    activationEmailPending: "請先到信箱完成 Email 驗證",
+    activationPending: "會員尚未正式啟用",
+    activationMember: "正式會員已啟用",
+    activationAdmin: "管理權限已啟用",
     rolePending: "待驗證／待啟用",
     roleMember: "正式會員",
     roleAdmin: "管理員",
@@ -63,6 +69,7 @@ const copy = {
     unavailable: "登入服務目前無法使用，請稍後再試。",
     invalidLink: "登入或驗證連結無效或已過期，請重新申請。",
     adminRequired: "請先登入。管理頁面仍須管理員角色，普通會員不會取得後台操作權限。",
+    memberActivated: "Email 已驗證，會員已正式啟用。",
     signingIn: "登入中...",
     submitting: "處理中...",
   },
@@ -82,15 +89,21 @@ const copy = {
     signOut: "Sign out",
     currentUser: "Signed-in account",
     authConnected: "Member status: Supabase Auth connected",
+    authEmail: "Auth email",
+    authEmailConfirmation: "Auth email confirmation",
     profileReady: "Member profile created",
     profileMissing: "Your member profile is being created. Refresh or try again later.",
     profileRole: "Profile role",
     displayName: "Display name",
     displayNameEmpty: "Not set",
     databasePoints: "Database points field",
-    databasePointsHint: "Reserved only; database-backed points are not enabled",
-    profileVerification: "Profile verification sync",
-    profileVerificationPending: "Not synced yet; A2 uses the Auth email status",
+    databasePointsHint: "Points are not database-backed yet; the formal ledger is planned for the next phase",
+    profileVerification: "Profile email_verified",
+    activationStatus: "Membership activation",
+    activationEmailPending: "Confirm your email before activating membership",
+    activationPending: "Membership is not active yet",
+    activationMember: "Membership is active",
+    activationAdmin: "Management access is active",
     rolePending: "Pending verification / activation",
     roleMember: "Member",
     roleAdmin: "Administrator",
@@ -109,6 +122,7 @@ const copy = {
     unavailable: "The sign-in service is unavailable. Please try again later.",
     invalidLink: "This sign-in or verification link is invalid or expired.",
     adminRequired: "Please sign in first. Admin pages still require an administrator role.",
+    memberActivated: "Email confirmed. Your membership is now active.",
     signingIn: "Signing in...",
     submitting: "Working...",
   },
@@ -128,15 +142,21 @@ const copy = {
     signOut: "ログアウト",
     currentUser: "ログイン中のアカウント",
     authConnected: "会員状態：Supabase Auth 接続済み",
+    authEmail: "Auth メール",
+    authEmailConfirmation: "Auth メール確認",
     profileReady: "正式な会員プロフィールを作成済み",
     profileMissing: "会員情報を作成中です。再読み込みするか、しばらくしてからお試しください。",
     profileRole: "プロフィール権限",
     displayName: "表示名",
     displayNameEmpty: "未設定",
     databasePoints: "データベースのポイント欄",
-    databasePointsHint: "予約欄のみ。ポイントのデータベース機能は未実装です",
-    profileVerification: "プロフィール認証同期",
-    profileVerificationPending: "未同期。A2 では Auth のメール状態を基準にします",
+    databasePointsHint: "ポイントは未データベース化です。正式な履歴は次の段階で対応します",
+    profileVerification: "プロフィール email_verified",
+    activationStatus: "会員の有効化状態",
+    activationEmailPending: "メール確認を完了してください",
+    activationPending: "会員はまだ有効化されていません",
+    activationMember: "正式会員として有効です",
+    activationAdmin: "管理権限が有効です",
     rolePending: "確認／有効化待ち",
     roleMember: "正式会員",
     roleAdmin: "管理者",
@@ -155,6 +175,7 @@ const copy = {
     unavailable: "ログインサービスを利用できません。後でもう一度お試しください。",
     invalidLink: "ログインまたは確認リンクが無効か、期限切れです。",
     adminRequired: "先にログインしてください。管理ページには管理者権限が必要です。",
+    memberActivated: "メール確認済みです。正式会員として有効になりました。",
     signingIn: "ログイン中...",
     submitting: "処理中...",
   },
@@ -179,6 +200,8 @@ export function MemberAuthHub({ initialUser, initialProfile = null, profileStatu
     if (initialNotice === "admin-auth-required") return text.adminRequired;
     if (initialNotice === "auth_callback_failed") return text.invalidLink;
     if (initialNotice === "auth-unavailable") return text.unavailable;
+    if (initialNotice === "email-verified-member") return text.memberActivated;
+    if (initialNotice === "email-verification-required") return text.activationEmailPending;
     return "";
   });
   const roleLabel = initialProfile
@@ -190,6 +213,15 @@ export function MemberAuthHub({ initialUser, initialProfile = null, profileStatu
           ? text.roleMember
           : text.rolePending
     : null;
+  const activationLabel = !initialUser?.emailVerified
+    ? text.activationEmailPending
+    : initialProfile?.role === "pending_member"
+      ? text.activationPending
+      : initialProfile?.role === "member"
+        ? text.activationMember
+        : initialProfile?.role === "admin" || initialProfile?.role === "owner"
+          ? text.activationAdmin
+          : text.activationPending;
 
   function clientOrNotice() {
     const client = getSupabaseBrowserClient();
@@ -204,13 +236,23 @@ export function MemberAuthHub({ initialUser, initialProfile = null, profileStatu
 
     setBusy(true);
     setNotice("");
-    const { error } = await supabase.auth.signInWithPassword({ email: email.trim(), password });
-    setBusy(false);
+    const { data: signInData, error } = await supabase.auth.signInWithPassword({ email: email.trim(), password });
     if (error) {
-      setNotice(text.loginError);
+      setBusy(false);
+      setNotice(error.code === "email_not_confirmed" ? text.activationEmailPending : text.loginError);
       return;
     }
-    router.replace("/member");
+
+    const { data: syncedProfiles } = await supabase.rpc("sync_own_profile_from_auth");
+    const syncedProfile = syncedProfiles?.[0] ?? null;
+    const notice = syncedProfile?.email_verified && syncedProfile.role === "member"
+      ? "?notice=email-verified-member"
+      : !signInData.user?.email_confirmed_at
+        ? "?notice=email-verification-required"
+        : "";
+
+    setBusy(false);
+    router.replace(`/member${notice}`);
     router.refresh();
   }
 
@@ -277,15 +319,16 @@ export function MemberAuthHub({ initialUser, initialProfile = null, profileStatu
             <div>
               <span className="tag">{initialUser.emailVerified ? "VERIFIED" : "PENDING"}</span>
               <h2>{text.currentUser}</h2>
-              <p>{initialUser.email}</p>
               <p>{text.authConnected}</p>
-              <p>{initialUser.emailVerified ? text.verified : text.pending}</p>
               {initialProfile ? (
                 <dl className="member-profile-details">
-                  <div><dt>{text.profileRole}</dt><dd>{roleLabel}</dd></div>
+                  <div><dt>{text.authEmail}</dt><dd>{initialUser.email}</dd></div>
+                  <div><dt>{text.authEmailConfirmation}</dt><dd>{initialUser.emailVerified ? text.verified : text.pending}</dd></div>
+                  <div><dt>{text.profileVerification}</dt><dd>{initialProfile.email_verified ? text.verified : text.pending}</dd></div>
+                  <div><dt>{text.profileRole}</dt><dd>{roleLabel} <small>({initialProfile.role})</small></dd></div>
+                  <div><dt>{text.activationStatus}</dt><dd>{activationLabel}</dd></div>
                   <div><dt>{text.displayName}</dt><dd>{initialProfile.display_name || text.displayNameEmpty}</dd></div>
                   <div><dt>{text.databasePoints}</dt><dd>{initialProfile.points_balance} · {text.databasePointsHint}</dd></div>
-                  <div><dt>{text.profileVerification}</dt><dd>{initialProfile.email_verified ? text.verified : text.profileVerificationPending}</dd></div>
                 </dl>
               ) : (
                 <p className="profile-status-warning" role="status">{text.profileMissing}</p>

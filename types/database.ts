@@ -115,6 +115,10 @@ export type Database = {
         Args: Record<PropertyKey, never>;
         Returns: ProfileRow[];
       };
+      sync_own_profile_from_auth: {
+        Args: Record<PropertyKey, never>;
+        Returns: ProfileRow[];
+      };
     };
     Enums: Record<string, never>;
     CompositeTypes: Record<string, never>;

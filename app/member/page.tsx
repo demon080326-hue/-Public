@@ -4,8 +4,24 @@ import { getCurrentMemberContext } from "@/lib/member-profile";
 
 export const dynamic = "force-dynamic";
 
-export default async function MemberPage() {
-  const member = await getCurrentMemberContext();
+type MemberPageProps = {
+  searchParams: Promise<Record<string, string | string[] | undefined>>;
+};
+
+function first(value: string | string[] | undefined) {
+  return Array.isArray(value) ? value[0] : value;
+}
+
+export default async function MemberPage({ searchParams }: MemberPageProps) {
+  const [member, params] = await Promise.all([
+    getCurrentMemberContext({ syncProfileFromAuth: true }),
+    searchParams,
+  ]);
   if (!member) redirect("/login");
-  return <MemberAuthHub initialUser={member.user} initialProfile={member.profile} profileStatus={member.profileStatus} showPoints />;
+  const notice = first(params.notice);
+  const initialNotice = notice === "email-verified-member" || notice === "email-verification-required"
+    ? notice
+    : null;
+
+  return <MemberAuthHub initialUser={member.user} initialProfile={member.profile} profileStatus={member.profileStatus} initialNotice={initialNotice} showPoints />;
 }

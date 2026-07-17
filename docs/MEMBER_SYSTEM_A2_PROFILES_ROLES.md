@@ -197,7 +197,7 @@ Supabase 驗收需確認 table、constraint、grants、policies、functions、tr
 
 ## A3 建議
 
-A3 優先完成 server-side profile 啟用與 Email verified 同步，再建立 admin／owner 的 AAL2/TOTP 強制保護。開始 A3 前先由使用者手動指定唯一 owner，且仍不得開放 CMS 寫入功能。
+A3 已由 `MEMBER_SYSTEM_A3_EMAIL_VERIFIED.md` 接續：完成 server-side profile 啟用、Email verified 同步與 `pending_member -> member` 單向升級，並保護既有 admin／owner 角色。下一步才會規劃 admin／owner 的 AAL2/TOTP 強制保護，且仍不得開放 CMS 寫入功能。
 
 ## 官方參考
 
