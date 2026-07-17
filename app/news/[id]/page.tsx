@@ -77,7 +77,7 @@ export default async function NewsDetailPage({ params }: { params: Promise<{ id:
         ) : null}
         {item.canonical_url || item.source_url ? (
           <p>
-            <a className="font-bold text-[var(--accent)]" href={item.canonical_url ?? item.source_url} target="_blank" rel="noreferrer">
+            <a className="font-bold text-[var(--accent)]" href={item.canonical_url ?? item.source_url} target="_blank" rel="noopener noreferrer">
               前往原始來源 →
             </a>
           </p>
