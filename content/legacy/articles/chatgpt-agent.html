@@ -1,0 +1,350 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>ChatGPT Agent 入門指南｜AI 不只回答問題，還能幫你完成任務 ｜ 重啟實驗室</title>
+  <meta name="description" content="ChatGPT Agent 入門指南：認識 Agent 模式、適合任務、使用流程、應用族群、提示技巧與安全注意事項。">
+  <link rel="stylesheet" href="../css/style.css">
+</head>
+<body>
+  <header class="site-header">
+    <nav class="nav" aria-label="主選單">
+      <a class="brand" href="../index.html" aria-label="回到首頁">
+        <span class="mark"><img src="../assets/logo.jpg" alt="James"></span>
+        <span><strong>重啟實驗室</strong><span>James AI Build Log</span></span>
+      </a>
+      <div class="nav-links">
+        <a href="../index.html">首頁</a>
+        <a href="../about.html">關於我</a>
+        <a href="../tools.html">工具</a>
+        <a class="active" href="../articles.html">文章</a>
+        <a href="../shop.html">購買清單</a>
+        <a href="../platform.html">總選單</a>
+        <a href="../contact.html">聯絡我</a>
+      </div>
+          <button class="menu-toggle" type="button" data-menu-toggle aria-label="開啟網站選單" aria-expanded="false">
+        <span></span><span></span><span></span>
+      </button>    </nav>
+  </header>
+  <main>
+    <article class="article-page" data-category="ChatGPT" data-tags="Agent,自動化,AI工作流,OpenAI">
+      <div class="wrap">
+        <div class="article-shell">
+          <header class="article-cover">
+            <p class="eyebrow">Article · 2026/7/10</p>
+            <h1>ChatGPT Agent 入門指南｜AI 不只回答問題，還能幫你完成任務</h1>
+            <p class="article-intro">ChatGPT Agent 代表 AI 從單純問答，走向能規劃、使用工具並協助完成任務的工作助理。</p>
+            <div class="article-meta">
+              <span>分類：ChatGPT</span>
+              <span class="date-pill">作者：James</span>
+              <span class="date-pill">閱讀時間：8 分鐘</span>
+            </div>
+          </header>
+
+          <div class="article-body">
+            <p>過去我們使用 ChatGPT，主要是拿來問問題、寫文案、整理資料或幫忙想點子。</p>
+            <p>但現在的 ChatGPT 已經進入下一個階段：<strong>Agent 模式</strong>。</p>
+            <p>簡單來說，ChatGPT Agent 不只是「回答你」，而是可以幫你「執行任務」。它能研究資料、操作網站、使用工具、整理文件，甚至協助完成更複雜的工作流程。</p>
+            <p>根據 OpenAI 官方說明，ChatGPT Agent 可以透過推理、研究與實際操作，幫使用者完成複雜的線上任務；它可以瀏覽網站、處理上傳檔案、連接第三方資料來源、填寫表單，以及編輯試算表。</p>
+
+            <h2>什麼是 ChatGPT Agent？</h2>
+            <p>ChatGPT Agent 可以理解成：</p>
+            <blockquote class="article-note">一個會思考、會規劃、會使用工具，並且能協助你完成任務的 AI 工作助理。</blockquote>
+            <p>一般 ChatGPT 比較像是「顧問」：你問問題，它回答你。</p>
+            <p>但 ChatGPT Agent 更像是「助理」：你交代目標，它會拆解步驟，使用工具，逐步完成任務。</p>
+            <p>OpenAI 在官方介紹中提到，ChatGPT Agent 能主動從一組工具中選擇適合的能力，並使用自己的虛擬電腦來完成任務。</p>
+            <p>這代表它不只是單純生成文字，而是可以根據任務需求，選擇瀏覽器、程式執行環境、連接資料來源等工具來完成工作。</p>
+
+            <h2>ChatGPT Agent 可以做什麼？</h2>
+            <p>ChatGPT Agent 適合處理比較完整、需要多步驟的任務。</p>
+
+            <h3>1. 深度資料研究</h3>
+            <p>你可以請它幫你研究一個主題，例如：</p>
+            <ul>
+              <li>市場趨勢</li>
+              <li>競爭對手分析</li>
+              <li>產品比較</li>
+              <li>產業報告</li>
+              <li>客戶需求整理</li>
+            </ul>
+            <p>它可以搜尋資料、整理重點，最後幫你輸出成報告。</p>
+
+            <h3>2. 網站操作與線上任務</h3>
+            <p>OpenAI 官方功能頁面提到，ChatGPT Agent 可以代表使用者與網站互動，例如預約、建立簡報等，處理從開始到完成的複雜任務。</p>
+            <p>這代表未來很多原本需要人工慢慢操作的線上流程，都有機會交給 AI 協助處理。</p>
+            <ul>
+              <li>查詢資料</li>
+              <li>填寫表單</li>
+              <li>整理網頁資訊</li>
+              <li>比較不同網站內容</li>
+              <li>協助處理線上工作流程</li>
+            </ul>
+
+            <h3>3. 文件與表格處理</h3>
+            <p>ChatGPT Agent 可以處理上傳檔案，也能使用程式工具分析資料。OpenAI 說明中提到，它可以使用 code interpreter 進行程式執行與資料分析，也可以編輯試算表。</p>
+            <p>適合用在：</p>
+            <ul>
+              <li>Excel 分析</li>
+              <li>銷售報表整理</li>
+              <li>成本試算</li>
+              <li>庫存資料分析</li>
+              <li>財務模型整理</li>
+              <li>表格格式修正</li>
+            </ul>
+            <p>對企業或創業者來說，這是非常實用的功能。</p>
+
+            <h3>4. 建立簡報、報告與工作成果</h3>
+            <p>OpenAI 在 2026 年 7 月 9 日的 ChatGPT 更新紀錄中，也介紹了 ChatGPT Work。它是一種針對更長、更複雜任務的 agent，可以研究與分析資訊、跨連接的 App 與檔案工作，並建立完成版文件、試算表、簡報、報告與網站。</p>
+            <p>這代表 AI 不只是幫你想內容，而是可以朝「完成品」的方向前進。</p>
+            <ul>
+              <li>市場研究報告</li>
+              <li>公司內部簡報</li>
+              <li>專案企劃書</li>
+              <li>SOP 文件</li>
+              <li>銷售分析表</li>
+              <li>網站草稿</li>
+            </ul>
+
+            <h2>ChatGPT Agent 怎麼開始使用？</h2>
+            <p>根據 OpenAI Help Center 的說明，使用者可以從工具選單中選擇 Agent 模式，或是在輸入框中輸入 <strong>/agent</strong> 來啟動。接著，只要描述你想完成的任務，Agent 就會開始執行。</p>
+            <p>基本流程是：</p>
+            <ol>
+              <li>開啟 ChatGPT</li>
+              <li>從工具選單選擇 Agent mode</li>
+              <li>輸入你要完成的任務</li>
+              <li>Agent 開始規劃與執行</li>
+              <li>需要時，它會請你確認或補充資訊</li>
+              <li>你可以中途打斷、修改方向或接手操作</li>
+            </ol>
+            <p>OpenAI 也提到，Agent 模式不需要技術背景，使用者可以在任務進行中引導或中斷它，因此對一般使用者來說也比較容易上手。</p>
+
+            <h2>ChatGPT Agent 和一般 ChatGPT 差在哪？</h2>
+            <p>最大的差別在於：<strong>一般 ChatGPT 偏向回答，Agent 偏向執行。</strong></p>
+            <h3>一般 ChatGPT</h3>
+            <ul>
+              <li>回答問題</li>
+              <li>寫文案</li>
+              <li>給建議</li>
+              <li>幫你想方向</li>
+            </ul>
+            <h3>ChatGPT Agent</h3>
+            <ul>
+              <li>拆解任務</li>
+              <li>使用工具</li>
+              <li>搜尋資料</li>
+              <li>操作網站</li>
+              <li>分析檔案</li>
+              <li>整理成果</li>
+              <li>需要時請你確認</li>
+            </ul>
+            <p>也就是說，如果你只是要問一個簡單問題，一般 ChatGPT 就夠了。</p>
+            <p>但如果你要完成一個完整任務，例如「幫我整理競品資料並做成簡報」，這時候 Agent 就更適合。</p>
+
+            <h2>ChatGPT Agent 適合哪些人？</h2>
+            <h3>1. 創業者</h3>
+            <ul>
+              <li>商業模式整理</li>
+              <li>市場分析</li>
+              <li>品牌定位</li>
+              <li>成本試算</li>
+              <li>開店流程規劃</li>
+              <li>SOP 建立</li>
+            </ul>
+            <h3>2. 公司主管</h3>
+            <ul>
+              <li>會議資料整理</li>
+              <li>專案進度追蹤</li>
+              <li>部門流程設計</li>
+              <li>營運數據分析</li>
+              <li>簡報製作</li>
+              <li>工作自動化規劃</li>
+            </ul>
+            <h3>3. 行銷人員</h3>
+            <ul>
+              <li>競品分析</li>
+              <li>廣告文案</li>
+              <li>社群貼文</li>
+              <li>活動企劃</li>
+              <li>內容排程</li>
+              <li>品牌研究</li>
+            </ul>
+            <h3>4. 自媒體經營者</h3>
+            <ul>
+              <li>文章大綱</li>
+              <li>IG 輪播文</li>
+              <li>短影音腳本</li>
+              <li>SEO 文章</li>
+              <li>內容主題研究</li>
+              <li>素材整理</li>
+            </ul>
+            <h3>5. 學生與研究者</h3>
+            <ul>
+              <li>文獻整理</li>
+              <li>報告架構</li>
+              <li>資料分析</li>
+              <li>重點摘要</li>
+              <li>簡報初稿</li>
+              <li>學習計畫</li>
+            </ul>
+
+            <h2>使用 ChatGPT Agent 的關鍵技巧</h2>
+            <h3>1. 任務要講清楚</h3>
+            <p>不要只說：</p>
+            <blockquote class="article-note">幫我研究 AI。</blockquote>
+            <p>可以改成：</p>
+            <blockquote class="article-note">請幫我研究 ChatGPT Agent 的功能、適合族群、應用場景與限制，整理成一篇適合新手閱讀的文章，字數約 1500 字，語氣簡單好懂。</blockquote>
+            <p>任務越清楚，結果越接近你要的。</p>
+
+            <h3>2. 提供背景資料</h3>
+            <p>如果你是老闆、主管、創業者或內容創作者，要把你的情境講出來。</p>
+            <blockquote class="article-note">我是一位餐飲創業者，想用 ChatGPT Agent 幫我規劃 AI 化營運流程，包含進貨、庫存、客服、財務、人資與 SOP。請幫我做成給老闆看的提案架構。</blockquote>
+            <p>這樣 Agent 才知道要用什麼角度幫你完成任務。</p>
+
+            <h3>3. 一次給一個主要目標</h3>
+            <p>Agent 雖然可以做複雜任務，但新手建議不要一次塞太多目標。</p>
+            <p>比較好的方式是：</p>
+            <ol>
+              <li>第一步：先請它整理架構</li>
+              <li>第二步：再請它補細節</li>
+              <li>第三步：再請它做簡報</li>
+              <li>第四步：再請它轉成 SOP</li>
+            </ol>
+            <p>這樣成果會更穩。</p>
+
+            <h3>4. 中途可以修改方向</h3>
+            <p>OpenAI 官方提到，ChatGPT Agent 適合互動式、協作式流程；使用者可以在它工作時中途打斷、補充說明、改變方向，而它可以接續原本進度繼續完成。</p>
+            <p>所以使用 Agent 不需要一次就完美。你可以像帶一位助理一樣，一邊看它做，一邊調整方向。</p>
+
+            <h2>使用 ChatGPT Agent 要注意什麼？</h2>
+            <p>ChatGPT Agent 很方便，但不能完全放著不管。</p>
+            <p>因為它可以連接網站、檔案與第三方資料來源，所以要注意資料安全。</p>
+            <p>OpenAI 官方也提醒，當你讓 Agent 登入網站或啟用 App 連接時，它可能可以存取電子郵件、檔案、帳號設定等敏感資料，因此使用時要注意隱私與安全風險。</p>
+            <p>建議：</p>
+            <ul>
+              <li>不要隨便給它敏感帳號資料</li>
+              <li>不需要的連接就關掉</li>
+              <li>重要操作一定要自己確認</li>
+              <li>涉及付款、發送郵件、刪除資料前要特別小心</li>
+              <li>不要完全相信第一次輸出的結果</li>
+            </ul>
+            <p>OpenAI 也提到，Agent 在涉及真實世界後果的操作時，會要求使用者明確確認，例如購買等重要行為。</p>
+
+            <h2>ChatGPT Agent 的限制</h2>
+            <p>ChatGPT Agent 很強，但它不是萬能。</p>
+            <p>目前仍可能出現：</p>
+            <ul>
+              <li>理解錯誤</li>
+              <li>操作錯誤</li>
+              <li>資料整理不完整</li>
+              <li>網站操作失敗</li>
+              <li>表格格式不完美</li>
+              <li>簡報美感不足</li>
+              <li>需要人工再次檢查</li>
+            </ul>
+            <p>OpenAI 官方也說明，ChatGPT Agent 仍處於早期階段，雖然能處理許多複雜任務，但仍可能犯錯。</p>
+            <p>所以最好的使用方式不是「完全取代人」，而是：</p>
+            <blockquote class="article-note">讓 AI 幫你完成 70% 到 80% 的重複性工作，再由人做最後判斷與修正。</blockquote>
+
+            <h2>新手可以怎麼開始？</h2>
+            <h3>任務 1：整理文章</h3>
+            <blockquote class="article-note">請幫我研究 ChatGPT Agent 的功能與使用方式，整理成一篇新手入門文章。</blockquote>
+            <h3>任務 2：分析競品</h3>
+            <blockquote class="article-note">請幫我整理 5 個同類型品牌的網站內容、產品特色、價格與行銷方式。</blockquote>
+            <h3>任務 3：製作簡報架構</h3>
+            <blockquote class="article-note">請幫我把這份資料整理成 10 頁簡報大綱，適合給主管報告。</blockquote>
+            <h3>任務 4：整理 Excel</h3>
+            <blockquote class="article-note">請幫我分析這份銷售表，找出銷售最高、毛利最高與需要改善的產品。</blockquote>
+            <h3>任務 5：建立 SOP</h3>
+            <blockquote class="article-note">請幫我把這段工作流程整理成標準作業流程 SOP，包含步驟、負責人與注意事項。</blockquote>
+
+            <h2>結語</h2>
+            <p>ChatGPT Agent 的出現，代表 AI 從「問答工具」進入「工作助理」階段。</p>
+            <p>它可以幫你研究、分析、整理、操作網站、處理檔案，甚至建立文件、表格與簡報。</p>
+            <p>但它最好的定位不是完全取代人，而是成為你的 AI 助理，幫你減少重複工作、加快資料整理速度，讓你把時間留給更重要的決策與創意。</p>
+            <p>未來真正有競爭力的人，不一定是最會使用工具的人，而是最懂得把 AI 放進工作流程裡的人。</p>
+          </div>
+        </div>
+      </div>
+    </article>
+  </main>
+  <footer class="footer">
+    <div class="wrap">
+      <span>&copy; 2026 詹姆士｜James · 重啟實驗室 · 高雄</span>
+      <div class="footer-links">
+        <a href="../index.html">首頁</a>
+        <a href="../about.html">關於我</a>
+        <a href="../tools.html">工具</a>
+        <a href="../articles.html">文章</a>
+        <a href="../shop.html">購買清單</a>
+        <a href="../platform.html">總選單</a>
+        <a href="../contact.html">聯絡我</a>
+      </div>
+    </div>
+  </footer>
+  <div class="menu-backdrop" data-menu-backdrop></div>
+  <aside class="site-menu" aria-label="網站總選單">
+    <div class="site-menu-head">
+      <div>
+        <strong>網站總選單</strong>
+        <span>先選大分類，再進小頁面</span>
+      </div>
+      <button class="menu-close" type="button" data-menu-close aria-label="關閉選單">×</button>
+    </div>
+    <div class="site-menu-body">
+      <details class="menu-group" open>
+        <summary>主要頁面</summary>
+        <a href="../index.html">首頁</a>
+        <a href="../about.html">關於我</a>
+        <a href="../tools.html">工具</a>
+        <a href="../articles.html">文章</a>
+        <a href="../shop.html">購買清單</a>
+        <a href="../contact.html">聯絡我</a>
+      </details>
+      <details class="menu-group">
+        <summary>AI 內容中心</summary>
+        <a href="../news.html">AI News</a>
+        <a href="../articles.html">AI School</a>
+        <a href="../prompts.html">Prompt Library</a>
+        <a href="../projects.html">AI Project</a>
+      </details>
+      <details class="menu-group">
+        <summary>商店與下載</summary>
+        <a href="../marketplace.html">Marketplace</a>
+        <a href="../downloads.html">Downloads</a>
+        <a href="../courses.html">Course</a>
+        <a href="../shop.html">購買清單</a>
+      </details>
+      <details class="menu-group">
+        <summary>會員與社群</summary>
+        <a href="../member.html">會員中心</a>
+        <a href="../community.html">Community</a>
+        <a href="../newsletter.html">Newsletter</a>
+        <a href="../podcast.html">Podcast</a>
+      </details>
+      <details class="menu-group">
+        <summary>管理系統</summary>
+        <a href="../cms.html">CMS Admin</a>
+        <a href="../prompts.html">AI 搜尋</a>
+        <a href="../contact.html">AI 客服入口</a>
+      </details>
+    </div>
+  </aside>
+
+  <div class="ai-helper" data-ai-helper>
+    <div class="ai-panel" role="dialog" aria-label="AI 小幫手">
+      <h2>AI 小幫手</h2>
+      <p data-ai-status>我可以先帶你找文章、工具、Prompt、商城或聯絡方式。正式聊天功能之後再接 API。</p>
+      <div class="ai-actions">
+        <a href="../platform.html">打開總選單</a>
+        <a href="../prompts.html">找 Prompt</a>
+        <a href="../articles.html">看文章</a>
+        <button type="button" data-ai-message="目前是前端小幫手 MVP。下一步可以接 OpenAI API，變成真正聊天助手。">這是真的 AI 嗎？</button>
+      </div>
+    </div>
+    <button class="ai-orb" type="button" data-ai-toggle aria-label="開啟 AI 小幫手" aria-expanded="false">AI</button>
+  </div>
+  <script src="../js/site-knowledge.js"></script>
+  <script src="../js/site-shell.js"></script>
+</body>
+</html>

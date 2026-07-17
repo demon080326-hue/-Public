@@ -1,0 +1,269 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>CMS Admin ｜ 重啟實驗室</title>
+  <meta name="description" content="CMS Admin 前端 MVP，用來建立文章草稿資料並產生可複製的 HTML 內容。">
+  <link rel="stylesheet" href="css/style.css">
+  <link rel="stylesheet" href="css/news.css?v=20260713-cms">
+</head>
+<body>
+  <header class="site-header"><nav class="nav" aria-label="主選單"><a class="brand" href="index.html"><span class="mark"><img src="assets/logo.jpg" alt="James"></span><span><strong>重啟實驗室</strong><span>James AI Build Log</span></span></a><div class="nav-links">
+        <a href="index.html">首頁</a>
+        <a href="about.html">關於我</a>
+        <a href="tools.html">工具</a>
+        <a href="articles.html">文章</a>
+        <a href="shop.html">購買清單</a>
+        <a href="platform.html">總選單</a>
+        <a href="contact.html">聯絡我</a>
+      </div>      <button class="menu-toggle" type="button" data-menu-toggle aria-label="開啟網站選單" aria-expanded="false">
+        <span></span><span></span><span></span>
+      </button>    </nav></header>
+  <main>
+    <section class="page-hero">
+      <div class="wrap">
+        <p class="eyebrow">CMS</p>
+        <h1>內容管理系統 MVP</h1>
+        <p class="page-copy">目前為前端 CMS MVP，正式發布需接後端或部署流程。</p>
+      </div>
+    </section>
+
+    <section class="section">
+      <div class="wrap cms-admin">
+        <div class="cms-admin-head">
+          <div>
+            <p class="eyebrow">Content Admin</p>
+            <h2>上架內容</h2>
+          </div>
+          <div class="cms-admin-actions">
+            <button class="btn secondary" type="button" data-cms-export>匯出 JSON</button>
+            <button class="btn secondary" type="button" data-cms-clear>清空暫存</button>
+          </div>
+        </div>
+
+        <div class="cms-layout">
+          <form class="cms-panel cms-form" data-cms-form>
+            <div class="cms-field-row">
+              <label>
+                內容類型
+                <select class="form-input" name="type" required>
+                  <option value="article">文章</option>
+                  <option value="tool">工具</option>
+                  <option value="product">商品</option>
+                  <option value="newsletter">電子報</option>
+                </select>
+              </label>
+              <label>
+                狀態
+                <select class="form-input" name="status">
+                  <option value="draft">草稿</option>
+                  <option value="ready">可上架</option>
+                  <option value="published">已上架</option>
+                </select>
+              </label>
+            </div>
+
+            <label>
+              標題
+              <input class="form-input" name="title" required placeholder="輸入標題">
+            </label>
+
+            <div class="cms-field-row">
+              <label>
+                Slug / 檔名
+                <input class="form-input" name="slug" placeholder="系統可自動產生">
+              </label>
+              <label>
+                分類
+                <input class="form-input" name="category" placeholder="Claude / 工具 / 商品分類">
+              </label>
+            </div>
+
+            <label>
+              圖片
+              <input class="form-input" name="image" required placeholder="assets/images/example.jpg 或圖片網址">
+            </label>
+
+            <div class="cms-field-row">
+              <label>
+                標籤
+                <input class="form-input" name="tags" placeholder="用逗號分隔">
+              </label>
+              <label>
+                價格 / 期數
+                <input class="form-input" name="price" placeholder="商品填價格；電子報可填期數">
+              </label>
+            </div>
+
+            <label>
+              摘要
+              <textarea class="form-input" name="summary" rows="4" required placeholder="列表與搜尋會顯示的摘要"></textarea>
+            </label>
+
+            <label>
+              內容
+              <textarea class="form-input" name="body" rows="8" placeholder="文章內文、商品說明、工具教學或電子報內容"></textarea>
+            </label>
+
+            <div class="cms-submit-row">
+              <button class="btn" type="submit">儲存內容</button>
+              <button class="btn secondary" type="reset">清空表單</button>
+            </div>
+          </form>
+
+          <aside class="cms-panel">
+            <h2>即時預覽</h2>
+            <div class="cms-preview" data-cms-preview>
+              <div class="cms-preview-empty">新增內容後會顯示預覽。</div>
+            </div>
+            <h2>資料輸出</h2>
+            <pre class="cms-output" data-cms-output>尚未建立內容。</pre>
+          </aside>
+        </div>
+
+        <div class="cms-panel cms-library">
+          <div class="cms-library-head">
+            <h2>內容庫</h2>
+            <div class="cms-tabs" role="tablist" aria-label="內容分類">
+              <button class="active" type="button" data-cms-filter="all">全部</button>
+              <button type="button" data-cms-filter="article">文章</button>
+              <button type="button" data-cms-filter="tool">工具</button>
+              <button type="button" data-cms-filter="product">商品</button>
+              <button type="button" data-cms-filter="newsletter">電子報</button>
+            </div>
+          </div>
+          <div class="cms-list" data-cms-list></div>
+        </div>
+      </div>
+    </section>
+
+    <section class="section">
+      <div class="wrap cms-admin" data-ai-news-admin>
+        <div class="cms-admin-head">
+          <div>
+            <p class="eyebrow">Restart AI Intelligence</p>
+            <h2>AI 情報管理</h2>
+            <p class="section-note">管理端 API 需使用 Netlify 環境變數 ADMIN_JWT_SECRET 驗證；token 只暫存在目前瀏覽器分頁 session。</p>
+          </div>
+          <div class="cms-admin-actions">
+            <button class="btn secondary" type="button" data-ai-admin-action="load-jobs">排程紀錄</button>
+            <button class="btn" type="button" data-ai-admin-action="run-collector">手動收集</button>
+          </div>
+        </div>
+
+        <div class="cms-panel cms-ai-panel">
+          <div class="news-filter-grid">
+            <label>管理 Token
+              <input class="form-input" type="password" data-ai-admin-token placeholder="貼上 ADMIN_JWT_SECRET">
+            </label>
+            <label>狀態
+              <select class="form-input" data-ai-admin-status>
+                <option value="all">全部</option>
+                <option value="pending">待審核</option>
+                <option value="approved">已核准</option>
+                <option value="needs_review">需人工審核</option>
+                <option value="spam">垃圾訊息</option>
+                <option value="duplicate">重複內容</option>
+                <option value="rejected">已排除</option>
+              </select>
+            </label>
+            <div class="news-filter-actions">
+              <button class="btn secondary" type="button" data-ai-admin-action="save-token">儲存 Token</button>
+              <button class="btn" type="button" data-ai-admin-action="load-news">載入情報</button>
+            </div>
+          </div>
+          <div class="cms-ai-message" data-ai-admin-message>尚未連線管理 API。</div>
+        </div>
+
+        <div class="cms-panel cms-library">
+          <div class="cms-library-head">
+            <h2>AI 情報列表</h2>
+          </div>
+          <div class="cms-list" data-ai-admin-list></div>
+        </div>
+
+        <div class="cms-panel">
+          <h2>排程 / 系統輸出</h2>
+          <pre class="cms-output" data-ai-admin-output>尚未載入排程紀錄。</pre>
+        </div>
+      </div>
+    </section>
+  </main>
+  <footer class="footer"><div class="wrap"><span>&copy; 2026 詹姆士｜James</span><div class="footer-links">
+        <a href="index.html">首頁</a>
+        <a href="about.html">關於我</a>
+        <a href="tools.html">工具</a>
+        <a href="articles.html">文章</a>
+        <a href="shop.html">購買清單</a>
+        <a href="platform.html">總選單</a>
+        <a href="contact.html">聯絡我</a>
+      </div></div></footer>
+  <script src="js/cms.js"></script>
+  <script src="js/cms-news.js?v=20260713-cms"></script>
+  <div class="menu-backdrop" data-menu-backdrop></div>
+  <aside class="site-menu" aria-label="網站總選單">
+    <div class="site-menu-head">
+      <div>
+        <strong>網站總選單</strong>
+        <span>先選大分類，再進小頁面</span>
+      </div>
+      <button class="menu-close" type="button" data-menu-close aria-label="關閉選單">×</button>
+    </div>
+    <div class="site-menu-body">
+      <details class="menu-group" open>
+        <summary>主要頁面</summary>
+        <a href="index.html">首頁</a>
+        <a href="about.html">關於我</a>
+        <a href="tools.html">工具</a>
+        <a href="articles.html">文章</a>
+        <a href="shop.html">購買清單</a>
+        <a href="contact.html">聯絡我</a>
+      </details>
+      <details class="menu-group">
+        <summary>AI 內容中心</summary>
+        <a href="news.html">AI News</a>
+        <a href="articles.html">AI School</a>
+        <a href="prompts.html">Prompt Library</a>
+        <a href="projects.html">AI Project</a>
+      </details>
+      <details class="menu-group">
+        <summary>商店與下載</summary>
+        <a href="marketplace.html">Marketplace</a>
+        <a href="downloads.html">Downloads</a>
+        <a href="courses.html">Course</a>
+        <a href="shop.html">購買清單</a>
+      </details>
+      <details class="menu-group">
+        <summary>會員與社群</summary>
+        <a href="member.html">會員中心</a>
+        <a href="community.html">Community</a>
+        <a href="newsletter.html">Newsletter</a>
+        <a href="podcast.html">Podcast</a>
+      </details>
+      <details class="menu-group">
+        <summary>管理系統</summary>
+        <a href="cms.html">CMS Admin</a>
+        <a href="prompts.html">AI 搜尋</a>
+        <a href="contact.html">AI 客服入口</a>
+      </details>
+    </div>
+  </aside>
+
+  <div class="ai-helper" data-ai-helper>
+    <div class="ai-panel" role="dialog" aria-label="AI 小幫手">
+      <h2>AI 小幫手</h2>
+      <p data-ai-status>我可以先帶你找文章、工具、Prompt、商城或聯絡方式。正式聊天功能之後再接 API。</p>
+      <div class="ai-actions">
+        <a href="platform.html">打開總選單</a>
+        <a href="prompts.html">找 Prompt</a>
+        <a href="articles.html">看文章</a>
+        <button type="button" data-ai-message="目前是前端小幫手 MVP。下一步可以接 OpenAI API，變成真正聊天助手。">這是真的 AI 嗎？</button>
+      </div>
+    </div>
+    <button class="ai-orb" type="button" data-ai-toggle aria-label="開啟 AI 小幫手" aria-expanded="false">AI</button>
+  </div>
+  <script src="js/site-knowledge.js"></script>
+  <script src="js/site-shell.js"></script>
+</body>
+</html>

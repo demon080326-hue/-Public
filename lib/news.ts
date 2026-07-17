@@ -46,6 +46,36 @@ function normalizeNewsItem(row: NewsRow): NewsItem {
   };
 }
 
+function interleaveBySource(items: NewsItem[]) {
+  const buckets = new Map<string, NewsItem[]>();
+  const sourceOrder: string[] = [];
+
+  for (const item of items) {
+    const source = item.source_name || "其他";
+    if (!buckets.has(source)) {
+      buckets.set(source, []);
+      sourceOrder.push(source);
+    }
+    buckets.get(source)?.push(item);
+  }
+
+  const arranged: NewsItem[] = [];
+  let hasItems = true;
+
+  while (hasItems) {
+    hasItems = false;
+    for (const source of sourceOrder) {
+      const next = buckets.get(source)?.shift();
+      if (next) {
+        arranged.push(next);
+        hasItems = true;
+      }
+    }
+  }
+
+  return arranged;
+}
+
 export async function getPublishedNews(limit = 24): Promise<NewsItem[]> {
   const supabase = await getSupabaseServerClient();
   if (!supabase) return [];
@@ -58,7 +88,7 @@ export async function getPublishedNews(limit = 24): Promise<NewsItem[]> {
     .limit(limit);
 
   if (error) throw new Error(`讀取 AI 情報失敗：${error.message}`);
-  return ((data ?? []) as NewsRow[]).map(normalizeNewsItem);
+  return interleaveBySource(((data ?? []) as NewsRow[]).map(normalizeNewsItem));
 }
 
 export async function getNewsById(id: string): Promise<NewsItem | null> {

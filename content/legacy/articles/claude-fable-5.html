@@ -1,0 +1,296 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Claude Fable 5 完整深度彙整 ｜ 重啟實驗室</title>
+  <meta name="description" content="Claude Fable 5 免費使用倒數、規格、定價、安全分類器、事件始末與使用建議整理。">
+  <link rel="stylesheet" href="../css/style.css">
+
+</head>
+<body>
+  <header class="site-header">
+    <nav class="nav" aria-label="主選單">
+      <a class="brand" href="../index.html" aria-label="回到首頁">
+        <span class="mark"><img src="../assets/logo.jpg" alt="James"></span>
+        <span>
+          <strong>重啟實驗室</strong>
+          <span>James AI Build Log</span>
+        </span>
+      </a>
+      <div class="nav-links">
+        <a href="../index.html">首頁</a>
+        <a href="../about.html">關於我</a>
+        <a href="../tools.html">工具</a>
+        <a class="active" href="../articles.html">文章</a>
+        <a href="../shop.html">購買清單</a>
+        <a href="../platform.html">總選單</a>
+        <a href="../contact.html">聯絡我</a>
+      </div>
+          <button class="menu-toggle" type="button" data-menu-toggle aria-label="開啟網站選單" aria-expanded="false">
+        <span></span><span></span><span></span>
+      </button>    </nav>
+  </header>
+
+  <main>
+    <article class="article-page">
+      <div class="wrap">
+        <div class="article-shell">
+          <header class="article-cover">
+            <p class="eyebrow">Article · 2026/7/8</p>
+            <h1>Claude Fable 5 完整深度彙整</h1>
+            <p class="article-intro">免費使用倒數、模型定位、效能差距、定價、下架事件、安全分類器與使用建議一次整理。</p>
+          </header>
+
+          <div class="article-body">
+            <h2>▋ 最重要：免費使用倒數計時</h2>
+            <p>付費方案（Pro / Max / Team / Enterprise）現在可以免費使用 Fable 5，截止時間是 <strong>2026 年 7 月 13 日 14:59</strong>，距今只剩約 5 天。上限是每週用量額度的 50%，超過後可切換 Opus 4.8 或 Sonnet 5 繼續，或買 Usage Credits 繼續用 Fable 5。免費方案完全無法使用 Fable 5。</p>
+
+            <h2>▋ Fable 5 是什麼？</h2>
+            <p>Claude Fable 5 是 Anthropic 在 2026 年 6 月 9 日推出的最新旗艦模型，是目前對外公開的最強 Claude 模型，定位在 Opus 4.8 之上，屬於「Mythos 級」。同場推出還有一個叫 Claude Mythos 5 的版本，兩者使用相同的底層模型權重，差別在於 Mythos 5 沒有安全分類器限制，但僅開放給通過 Anthropic「Project Glasswing」審核的特定政府與研究機構，一般用戶無法使用。</p>
+            <p><strong>基本規格：</strong></p>
+            <ul>
+              <li>支援 100 萬 token 上下文視窗</li>
+              <li>單次最多輸出 128,000 tokens</li>
+              <li>支援平台：claude.ai 網頁版、桌面版、手機 App、Claude Code、Cowork、AWS Bedrock、Google Cloud、Microsoft Foundry</li>
+              <li>API 代號：<code>claude-fable-5</code></li>
+            </ul>
+
+            <h2>▋ 比 Opus 4.8 強多少？</h2>
+            <div class="table-wrap" aria-label="Fable 5 與 Opus 4.8 評測比較">
+              <table>
+                <thead>
+                  <tr>
+                    <th>評測項目</th>
+                    <th>Fable 5</th>
+                    <th>Opus 4.8</th>
+                    <th>差距</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr>
+                    <td data-label="評測項目">SWE-Bench Pro（程式修 bug）</td>
+                    <td data-label="Fable 5">80.3%</td>
+                    <td data-label="Opus 4.8">69.2%</td>
+                    <td data-label="差距">+11.1%</td>
+                  </tr>
+                  <tr>
+                    <td data-label="評測項目">FrontierCode（複雜程式）</td>
+                    <td data-label="Fable 5">29.3%</td>
+                    <td data-label="Opus 4.8">13.4%</td>
+                    <td data-label="差距">+15.9%</td>
+                  </tr>
+                  <tr>
+                    <td data-label="評測項目">BenchLM 綜合評分</td>
+                    <td data-label="Fable 5">92</td>
+                    <td data-label="Opus 4.8">86</td>
+                    <td data-label="差距">+6</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+            <p>重點：任務越長、越複雜，Fable 5 的優勢越明顯。短任務或日常對話，兩者差距縮小很多。</p>
+            <p><strong>實際用戶案例：</strong></p>
+            <ul>
+              <li>Replit 表示 Fable 5 在「vibe-coding」基準測試中表現最高</li>
+              <li>某金融客戶的核心分析基準從 Opus 4.8 跳升 10 個百分點，首次突破 90%</li>
+              <li>一家試算表自動化公司發現 Fable 5 不只更準確，還快了 25–30%</li>
+            </ul>
+
+            <h2>▋ 定價比較</h2>
+            <div class="table-wrap" aria-label="Fable 5 與 Opus 4.8 定價比較">
+              <table>
+                <thead>
+                  <tr>
+                    <th>項目</th>
+                    <th>Fable 5</th>
+                    <th>Opus 4.8</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr>
+                    <td data-label="項目">輸入（每百萬 token）</td>
+                    <td data-label="Fable 5">$10 美元</td>
+                    <td data-label="Opus 4.8">$5 美元</td>
+                  </tr>
+                  <tr>
+                    <td data-label="項目">輸出（每百萬 token）</td>
+                    <td data-label="Fable 5">$50 美元</td>
+                    <td data-label="Opus 4.8">$25 美元</td>
+                  </tr>
+                  <tr>
+                    <td data-label="項目">5 分鐘快取寫入</td>
+                    <td data-label="Fable 5">$12.50</td>
+                    <td data-label="Opus 4.8">$6.25</td>
+                  </tr>
+                  <tr>
+                    <td data-label="項目">1 小時快取寫入</td>
+                    <td data-label="Fable 5">$20</td>
+                    <td data-label="Opus 4.8">$10</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+            <p>整體約是 Opus 4.8 的<strong>兩倍</strong>。不過 Anthropic 和客戶都反映，Fable 5 完成任務所需的 token 數更少、對話輪次更少，實際費用差距可能比帳面小。</p>
+
+            <h2>▋ 事件始末：被下架 19 天的前因後果</h2>
+            <p><strong>6/9 上線</strong>：Fable 5 與 Mythos 5 正式推出，引發業界高度關注。</p>
+            <p><strong>6/12 全球下架</strong>：上線僅三天，Amazon 研究人員發現了一個嚴重的越獄手法：透過提示 Fable 5 閱讀程式碼庫並找出軟體漏洞，在某些情況下模型會直接產出示範如何利用漏洞的攻擊程式碼。美國商務部工業和安全局（Bureau of Industry and Security）隨即對兩款模型發出出口管制命令，要求 Anthropic 在將模型「出口」給任何外國人之前必須取得政府許可，包括 Anthropic 自己的非美籍員工。Anthropic 被迫暫停全球所有人的存取，這在 AI 業界是前所未有的事。</p>
+            <p><strong>6/30 解禁</strong>：美國商務部解除出口管制。Anthropic 同步宣布已訓練出針對該越獄手法的新版安全分類器，並與政府共同提出「越獄嚴重性分級框架」。</p>
+            <p><strong>7/1 全球恢復</strong>：Fable 5 在網頁版、桌面版、手機 App、Claude Code、Cowork 及 API 全面恢復，同步開放補償優惠。</p>
+
+            <h2>▋ 恢復後的 Fable 5 有什麼不同？</h2>
+            <p>新版加入了三個方向的安全分類器：</p>
+            <ol>
+              <li><strong>網路安全（cybersecurity）</strong>：攔截可用於攻擊的安全漏洞請求</li>
+              <li><strong>生物/化學（bio/chem）</strong>：攔截潛在危害性的生物化學內容</li>
+              <li><strong>蒸餾保護（distillation）</strong>：防止用來竊取模型能力的提示</li>
+            </ol>
+            <p>官方說明：攔截越獄手法的準確率超過 99%。當請求觸發分類器時，Fable 5 會將請求交給 Opus 4.8 回答，使用者會收到通知，且不會以 Fable 5 的費率計費。根據 Anthropic 數據，這種情況在不到 5% 的會話中發生。</p>
+            <p>一般日常用途（聊天、寫作、寫程式、分析資料）幾乎完全不受影響。</p>
+            <p class="article-note">開發者注意：Fable 5 被分類器拒絕時，API 回傳的是 HTTP 200 搭配 <code>stop_reason: "refusal"</code>，而非錯誤代碼，建議在程式中加入 fallback 機制。</p>
+
+            <h2>▋ 各優惠完整時程</h2>
+            <div class="table-wrap" aria-label="Fable 5 優惠時程">
+              <table>
+                <thead>
+                  <tr>
+                    <th>優惠內容</th>
+                    <th>適用對象</th>
+                    <th>截止時間</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr>
+                    <td data-label="優惠內容">每週額度 50% 免費用 Fable 5</td>
+                    <td data-label="適用對象">Pro / Max / Team / Enterprise</td>
+                    <td data-label="截止時間"><strong>7/13 14:59</strong>（剩 5 天）</td>
+                  </tr>
+                  <tr>
+                    <td data-label="優惠內容">Claude Code 每週上限提升 50%</td>
+                    <td data-label="適用對象">Pro / Max / Team / Enterprise</td>
+                    <td data-label="截止時間">7/13</td>
+                  </tr>
+                  <tr>
+                    <td data-label="優惠內容">Cowork 五小時用量翻倍</td>
+                    <td data-label="適用對象">Pro / Max / Team</td>
+                    <td data-label="截止時間">已截止（7/5）</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+
+            <h2>▋ 7/13 之後怎麼辦？</h2>
+            <p>付費方案對 Fable 5 的存取改為 <strong>Usage Credits 計費</strong>，用多少扣多少；API 定價維持輸入 $10、輸出 $50 每百萬 token。不常用的話，切回 Opus 4.8 或 Sonnet 5 最省錢。</p>
+
+            <h2>▋ 免費用戶的替代方案：Sonnet 5</h2>
+            <p>Anthropic 在 6/30 同步推出 Claude Sonnet 5，已成為免費用戶的預設模型。效能逼近 Opus 4.8，但成本更低（每百萬 token 輸入約 $3、輸出 $15），日常寫作、問答、簡單分析全部夠用。</p>
+
+            <h2>▋ 誰應該用 Fable 5？誰不需要？</h2>
+            <p><strong>值得用 Fable 5 的情境：</strong></p>
+            <ul>
+              <li>長文件分析、大型程式碼重構、多步驟 agent 自動化任務</li>
+              <li>需要深度推理的研究型任務</li>
+              <li>之前用 Opus 4.8 卡住或品質不滿意的困難任務</li>
+            </ul>
+            <p><strong>用 Opus 4.8 或 Sonnet 5 就夠的情境：</strong></p>
+            <ul>
+              <li>日常聊天、摘要、翻譯、改寫</li>
+              <li>高頻次、大量的 API 呼叫（成本考量）</li>
+              <li>對回應速度有要求的場景</li>
+            </ul>
+
+            <h2>Sources</h2>
+            <ul class="source-list">
+              <li><a href="https://pcrookie.com/claude-fable-5-restored-promo-2026/" target="_blank" rel="noreferrer">Claude Fable 5 回來了！被禁 19 天後全球恢復 - 軟體玩家</a></li>
+              <li><a href="https://thehackernews.com/2026/07/anthropic-restores-claude-fable-5-after.html" target="_blank" rel="noreferrer">Anthropic Restores Claude Fable 5 After U.S. Lifts Jailbreak-Linked Export Controls - The Hacker News</a></li>
+              <li><a href="https://www.truefoundry.com/blog/claude-fable-5-vs-opus-4-8-benchmarks-pricing-when-to-use-each" target="_blank" rel="noreferrer">Claude Fable 5 vs Opus 4.8: Benchmarks, Pricing & When to Use Each - TrueFoundry</a></li>
+              <li><a href="https://www.techtimes.com/articles/319413/20260701/claude-fable-5-returns-globally-new-classifier-blocks-jailbreak-flags-more-code.htm" target="_blank" rel="noreferrer">Claude Fable 5 Returns Globally: New Classifier Blocks Jailbreak - TechTimes</a></li>
+              <li><a href="https://www.buildthisnow.com/blog/models/fable-5-ban-explained" target="_blank" rel="noreferrer">Why Was Claude Fable 5 Banned? - Build This Now</a></li>
+            </ul>
+          </div>
+        </div>
+      </div>
+    </article>
+  </main>
+
+  <footer class="footer">
+    <div class="wrap">
+      <span>&copy; 2026 詹姆士｜James · 重啟實驗室 · 高雄</span>
+      <div class="footer-links">
+        <a href="../index.html">首頁</a>
+        <a href="../about.html">關於我</a>
+        <a href="../tools.html">工具</a>
+        <a href="../articles.html">文章</a>
+        <a href="../shop.html">購買清單</a>
+        <a href="../platform.html">總選單</a>
+        <a href="../contact.html">聯絡我</a>
+      </div>
+    </div>
+  </footer>
+  <div class="menu-backdrop" data-menu-backdrop></div>
+  <aside class="site-menu" aria-label="網站總選單">
+    <div class="site-menu-head">
+      <div>
+        <strong>網站總選單</strong>
+        <span>先選大分類，再進小頁面</span>
+      </div>
+      <button class="menu-close" type="button" data-menu-close aria-label="關閉選單">×</button>
+    </div>
+    <div class="site-menu-body">
+      <details class="menu-group" open>
+        <summary>主要頁面</summary>
+        <a href="../index.html">首頁</a>
+        <a href="../about.html">關於我</a>
+        <a href="../tools.html">工具</a>
+        <a href="../articles.html">文章</a>
+        <a href="../shop.html">購買清單</a>
+        <a href="../contact.html">聯絡我</a>
+      </details>
+      <details class="menu-group">
+        <summary>AI 內容中心</summary>
+        <a href="../news.html">AI News</a>
+        <a href="../articles.html">AI School</a>
+        <a href="../prompts.html">Prompt Library</a>
+        <a href="../projects.html">AI Project</a>
+      </details>
+      <details class="menu-group">
+        <summary>商店與下載</summary>
+        <a href="../marketplace.html">Marketplace</a>
+        <a href="../downloads.html">Downloads</a>
+        <a href="../courses.html">Course</a>
+        <a href="../shop.html">購買清單</a>
+      </details>
+      <details class="menu-group">
+        <summary>會員與社群</summary>
+        <a href="../member.html">會員中心</a>
+        <a href="../community.html">Community</a>
+        <a href="../newsletter.html">Newsletter</a>
+        <a href="../podcast.html">Podcast</a>
+      </details>
+      <details class="menu-group">
+        <summary>管理系統</summary>
+        <a href="../cms.html">CMS Admin</a>
+        <a href="../prompts.html">AI 搜尋</a>
+        <a href="../contact.html">AI 客服入口</a>
+      </details>
+    </div>
+  </aside>
+
+  <div class="ai-helper" data-ai-helper>
+    <div class="ai-panel" role="dialog" aria-label="AI 小幫手">
+      <h2>AI 小幫手</h2>
+      <p data-ai-status>我可以先帶你找文章、工具、Prompt、商城或聯絡方式。正式聊天功能之後再接 API。</p>
+      <div class="ai-actions">
+        <a href="../platform.html">打開總選單</a>
+        <a href="../prompts.html">找 Prompt</a>
+        <a href="../articles.html">看文章</a>
+        <button type="button" data-ai-message="目前是前端小幫手 MVP。下一步可以接 OpenAI API，變成真正聊天助手。">這是真的 AI 嗎？</button>
+      </div>
+    </div>
+    <button class="ai-orb" type="button" data-ai-toggle aria-label="開啟 AI 小幫手" aria-expanded="false">AI</button>
+  </div>
+  <script src="../js/site-knowledge.js"></script>
+  <script src="../js/site-shell.js"></script>
+</body>
+</html>
