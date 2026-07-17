@@ -120,6 +120,8 @@ npm run dev
 
 下一階段先建立最小 `profiles` 與可信的 server-side role 來源，配合 RLS 實作 `member`／`admin`／`owner` 權限；在 role 與 AAL2 驗證完成前，後台繼續維持全面阻擋。正式資料表、migration 與 RLS 必須另案審查，不屬於 A1。
 
+> 後續狀態：A2 已於 2026-07-18 完成。實作與驗收詳見 `MEMBER_SYSTEM_A2_PROFILES_ROLES.md`。
+
 ## 官方參考
 
 - [Supabase Server-Side Auth](https://supabase.com/docs/guides/auth/server-side)

@@ -47,6 +47,19 @@ export type AiNewsRow = {
   updated_at: string | null;
 };
 
+export type MemberRole = "pending_member" | "member" | "admin" | "owner";
+
+export type ProfileRow = {
+  user_id: string;
+  email: string | null;
+  display_name: string | null;
+  role: MemberRole;
+  email_verified: boolean;
+  points_balance: number;
+  created_at: string;
+  updated_at: string;
+};
+
 export type Database = {
   public: {
     Tables: {
@@ -54,6 +67,12 @@ export type Database = {
         Row: AiNewsRow;
         Insert: Partial<AiNewsRow> & Pick<AiNewsRow, "title" | "url">;
         Update: Partial<AiNewsRow>;
+        Relationships: [];
+      };
+      profiles: {
+        Row: ProfileRow;
+        Insert: Partial<ProfileRow> & Pick<ProfileRow, "user_id">;
+        Update: Pick<Partial<ProfileRow>, "display_name">;
         Relationships: [];
       };
       ai_sources: {
@@ -91,7 +110,12 @@ export type Database = {
       };
     };
     Views: Record<string, never>;
-    Functions: Record<string, never>;
+    Functions: {
+      get_current_user_profile: {
+        Args: Record<PropertyKey, never>;
+        Returns: ProfileRow[];
+      };
+    };
     Enums: Record<string, never>;
     CompositeTypes: Record<string, never>;
   };

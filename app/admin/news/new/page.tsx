@@ -1,5 +1,12 @@
+import { redirect } from "next/navigation";
 import { AdminAccessNotice } from "@/components/admin-access-notice";
+import { getCurrentMemberContext, hasAdminAccess } from "@/lib/member-profile";
 
-export default function NewNewsPage() {
-  return <AdminAccessNotice page="news" />;
+export const dynamic = "force-dynamic";
+
+export default async function NewNewsPage() {
+  const member = await getCurrentMemberContext();
+  if (!member) redirect("/login");
+  const role = member.profile?.role ?? null;
+  return <AdminAccessNotice page="news" role={role} accessGranted={hasAdminAccess(role)} />;
 }

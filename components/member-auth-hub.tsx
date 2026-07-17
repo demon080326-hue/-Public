@@ -7,11 +7,14 @@ import { useSiteLanguage } from "@/hooks/use-site-language";
 import type { AuthUserSummary } from "@/lib/auth-user";
 import { getSupabaseBrowserClient } from "@/lib/supabase/browser";
 import type { SiteLanguage } from "@/lib/site-language";
+import type { ProfileRow } from "@/types/database";
 
 type AuthMode = "login" | "register" | "forgot";
 
 type MemberAuthHubProps = {
   initialUser: AuthUserSummary | null;
+  initialProfile?: ProfileRow | null;
+  profileStatus?: "ready" | "missing" | "error" | null;
   initialNotice?: "admin-auth-required" | "auth_callback_failed" | "auth-unavailable" | null;
   showPoints?: boolean;
 };
@@ -33,6 +36,19 @@ const copy = {
     signOut: "登出",
     currentUser: "目前登入帳號",
     authConnected: "會員狀態：正式 Supabase Auth 已連線",
+    profileReady: "正式會員 Profile 已建立",
+    profileMissing: "會員資料建立中，請重新整理或稍後再試。",
+    profileRole: "Profile 角色",
+    displayName: "顯示名稱",
+    displayNameEmpty: "尚未設定",
+    databasePoints: "資料庫點數欄位",
+    databasePointsHint: "僅保留欄位，點數資料庫功能尚未啟用",
+    profileVerification: "Profile 驗證同步",
+    profileVerificationPending: "尚未同步；A2 以 Auth Email 狀態為準",
+    rolePending: "待驗證／待啟用",
+    roleMember: "正式會員",
+    roleAdmin: "管理員",
+    roleOwner: "擁有者",
     verified: "Email 已確認",
     pending: "Email 待確認",
     verifyHint: "註冊後請到信箱完成確認；未確認前不會取得正式會員或管理權限。",
@@ -66,6 +82,19 @@ const copy = {
     signOut: "Sign out",
     currentUser: "Signed-in account",
     authConnected: "Member status: Supabase Auth connected",
+    profileReady: "Member profile created",
+    profileMissing: "Your member profile is being created. Refresh or try again later.",
+    profileRole: "Profile role",
+    displayName: "Display name",
+    displayNameEmpty: "Not set",
+    databasePoints: "Database points field",
+    databasePointsHint: "Reserved only; database-backed points are not enabled",
+    profileVerification: "Profile verification sync",
+    profileVerificationPending: "Not synced yet; A2 uses the Auth email status",
+    rolePending: "Pending verification / activation",
+    roleMember: "Member",
+    roleAdmin: "Administrator",
+    roleOwner: "Owner",
     verified: "Email confirmed",
     pending: "Email confirmation pending",
     verifyHint: "Confirm your email after registration. Unverified accounts receive no member or admin access.",
@@ -99,6 +128,19 @@ const copy = {
     signOut: "ログアウト",
     currentUser: "ログイン中のアカウント",
     authConnected: "会員状態：Supabase Auth 接続済み",
+    profileReady: "正式な会員プロフィールを作成済み",
+    profileMissing: "会員情報を作成中です。再読み込みするか、しばらくしてからお試しください。",
+    profileRole: "プロフィール権限",
+    displayName: "表示名",
+    displayNameEmpty: "未設定",
+    databasePoints: "データベースのポイント欄",
+    databasePointsHint: "予約欄のみ。ポイントのデータベース機能は未実装です",
+    profileVerification: "プロフィール認証同期",
+    profileVerificationPending: "未同期。A2 では Auth のメール状態を基準にします",
+    rolePending: "確認／有効化待ち",
+    roleMember: "正式会員",
+    roleAdmin: "管理者",
+    roleOwner: "オーナー",
     verified: "メール確認済み",
     pending: "メール確認待ち",
     verifyHint: "登録後にメール確認を完了してください。未確認のアカウントには正式な権限は付与されません。",
@@ -124,7 +166,7 @@ function callbackUrl(nextPath: string) {
   return url.toString();
 }
 
-export function MemberAuthHub({ initialUser, initialNotice, showPoints = false }: MemberAuthHubProps) {
+export function MemberAuthHub({ initialUser, initialProfile = null, profileStatus = null, initialNotice, showPoints = false }: MemberAuthHubProps) {
   const language = useSiteLanguage();
   const text = copy[language];
   const router = useRouter();
@@ -139,6 +181,15 @@ export function MemberAuthHub({ initialUser, initialNotice, showPoints = false }
     if (initialNotice === "auth-unavailable") return text.unavailable;
     return "";
   });
+  const roleLabel = initialProfile
+    ? initialProfile.role === "owner"
+      ? text.roleOwner
+      : initialProfile.role === "admin"
+        ? text.roleAdmin
+        : initialProfile.role === "member"
+          ? text.roleMember
+          : text.rolePending
+    : null;
 
   function clientOrNotice() {
     const client = getSupabaseBrowserClient();
@@ -229,6 +280,17 @@ export function MemberAuthHub({ initialUser, initialNotice, showPoints = false }
               <p>{initialUser.email}</p>
               <p>{text.authConnected}</p>
               <p>{initialUser.emailVerified ? text.verified : text.pending}</p>
+              {initialProfile ? (
+                <dl className="member-profile-details">
+                  <div><dt>{text.profileRole}</dt><dd>{roleLabel}</dd></div>
+                  <div><dt>{text.displayName}</dt><dd>{initialProfile.display_name || text.displayNameEmpty}</dd></div>
+                  <div><dt>{text.databasePoints}</dt><dd>{initialProfile.points_balance} · {text.databasePointsHint}</dd></div>
+                  <div><dt>{text.profileVerification}</dt><dd>{initialProfile.email_verified ? text.verified : text.profileVerificationPending}</dd></div>
+                </dl>
+              ) : (
+                <p className="profile-status-warning" role="status">{text.profileMissing}</p>
+              )}
+              {profileStatus === "ready" && <small className="profile-ready-label">{text.profileReady}</small>}
             </div>
             <button className="btn secondary" type="button" onClick={handleSignOut} disabled={busy}>{text.signOut}</button>
           </article>

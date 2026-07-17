@@ -1,5 +1,5 @@
 import { MemberAuthHub } from "@/components/member-auth-hub";
-import { getAuthUserSummary } from "@/lib/auth-user";
+import { getCurrentMemberContext } from "@/lib/member-profile";
 
 export const dynamic = "force-dynamic";
 
@@ -12,7 +12,7 @@ function first(value: string | string[] | undefined) {
 }
 
 export default async function LoginPage({ searchParams }: LoginPageProps) {
-  const [user, params] = await Promise.all([getAuthUserSummary(), searchParams]);
+  const [member, params] = await Promise.all([getCurrentMemberContext(), searchParams]);
   const noticeValue = first(params.notice);
   const errorValue = first(params.error);
   const initialNotice = noticeValue === "admin-auth-required"
@@ -21,5 +21,5 @@ export default async function LoginPage({ searchParams }: LoginPageProps) {
       ? errorValue
       : null;
 
-  return <MemberAuthHub initialUser={user} initialNotice={initialNotice} />;
+  return <MemberAuthHub initialUser={member?.user ?? null} initialProfile={member?.profile ?? null} profileStatus={member?.profileStatus ?? null} initialNotice={initialNotice} />;
 }
