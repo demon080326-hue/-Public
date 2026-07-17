@@ -1,5 +1,5 @@
-import { CmsDashboard } from "@/components/cms-dashboard";
+import { AdminAccessNotice } from "@/components/admin-access-notice";
 
 export default function DashboardPage() {
-  return <CmsDashboard />;
+  return <AdminAccessNotice page="dashboard" />;
 }

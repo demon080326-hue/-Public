@@ -1,20 +1,18 @@
 "use client";
 
-import { usePathname, useRouter } from "next/navigation";
+import { usePathname } from "next/navigation";
 import { useEffect } from "react";
 import { SiteLanguage, translateSiteText } from "@/lib/site-language";
 
 type Member = {
-  name: string;
   email: string;
-  level: string;
+  verified: boolean;
   points: number;
-  purchases: string[];
-  downloads: string[];
 };
 
-const memberKey = "james-ai-member";
+const memberKey = "james-member-mvp-v2";
 const originalText = new WeakMap<Text, string>();
+const originalAttributes = new WeakMap<HTMLElement, Map<string, string>>();
 
 const searchItems = [
   ["關於我", "主要頁面", "James 背景 重啟實驗室", "/about"],
@@ -38,35 +36,33 @@ function readMember(): Member | null {
 
 function renderMemberState() {
   const member = readMember();
-  document.querySelectorAll<HTMLElement>("[data-member-guest]").forEach((element) => (element.hidden = Boolean(member)));
-  document.querySelectorAll<HTMLElement>("[data-member-auth]").forEach((element) => (element.hidden = !member));
-  document.querySelectorAll<HTMLElement>("[data-member-name]").forEach((element) => (element.textContent = member?.name ?? "訪客"));
+  const verified = Boolean(member?.verified);
+  document.querySelectorAll<HTMLElement>("[data-member-guest]").forEach((element) => (element.hidden = verified));
+  document.querySelectorAll<HTMLElement>("[data-member-auth]").forEach((element) => (element.hidden = !verified));
+  document.querySelectorAll<HTMLElement>("[data-member-name]").forEach((element) => (element.textContent = verified ? "已驗證會員" : "訪客"));
   document.querySelectorAll<HTMLElement>("[data-member-email]").forEach((element) => (element.textContent = member?.email ?? ""));
-  document.querySelectorAll<HTMLElement>("[data-member-level]").forEach((element) => (element.textContent = member?.level ?? "Guest"));
+  document.querySelectorAll<HTMLElement>("[data-member-level]").forEach((element) => (element.textContent = verified ? "測試模式會員" : "訪客"));
   document.querySelectorAll<HTMLElement>("[data-member-points]").forEach((element) => (element.textContent = String(member?.points ?? 0)));
-  document.querySelectorAll<HTMLElement>("[data-member-purchase-count]").forEach((element) => (element.textContent = String(member?.purchases.length ?? 0)));
-  document.querySelectorAll<HTMLElement>("[data-member-download-count]").forEach((element) => (element.textContent = String(member?.downloads.length ?? 0)));
+  document.querySelectorAll<HTMLElement>("[data-member-purchase-count], [data-member-download-count]").forEach((element) => (element.textContent = "0"));
 
   document.querySelectorAll<HTMLElement>("[data-purchase-required]").forEach((card) => {
-    const productId = card.dataset.purchaseRequired ?? "";
-    const unlocked = Boolean(member?.purchases.includes(productId));
-    card.classList.toggle("is-locked", !unlocked);
-    card.classList.toggle("is-unlocked", unlocked);
-    card.querySelectorAll<HTMLElement>("[data-lock-guest]").forEach((element) => (element.hidden = Boolean(member)));
-    card.querySelectorAll<HTMLElement>("[data-lock-purchase]").forEach((element) => (element.hidden = !member || unlocked));
-    card.querySelectorAll<HTMLElement>("[data-purchase-content]").forEach((element) => (element.hidden = !unlocked));
+    card.classList.add("is-locked");
+    card.classList.remove("is-unlocked");
+    card.querySelectorAll<HTMLElement>("[data-lock-guest], [data-lock-purchase]").forEach((element) => {
+      element.hidden = false;
+      element.textContent = "AI 商城購買功能暫未開放，正式金流上線後才會開放購買與解鎖。";
+    });
+    card.querySelectorAll<HTMLElement>("[data-purchase-content]").forEach((element) => (element.hidden = true));
     card.querySelectorAll<HTMLButtonElement>("[data-purchase-action]").forEach((button) => {
-      button.textContent = !member ? "登入會員" : unlocked ? "已解鎖" : "購買解鎖";
-      button.disabled = unlocked;
+      button.textContent = "暫未開放";
+      button.disabled = true;
+      button.setAttribute("aria-disabled", "true");
+      button.title = "AI 商城購買功能暫未開放";
     });
   });
 
   const purchaseList = document.querySelector<HTMLElement>("[data-member-purchase-list]");
-  if (purchaseList) {
-    purchaseList.innerHTML = member?.purchases.length
-      ? member.purchases.map((item) => `<li>${item}</li>`).join("")
-      : "<li>目前還沒有購買紀錄</li>";
-  }
+  if (purchaseList) purchaseList.textContent = "正式購買與解鎖功能尚未開放。";
 }
 
 function startClock() {
@@ -102,11 +98,21 @@ function translatePage(language: SiteLanguage) {
     }
     node = walker.nextNode() as Text | null;
   }
+
+  root.querySelectorAll<HTMLElement>("[placeholder], [aria-label], [title]").forEach((element) => {
+    const attributes = originalAttributes.get(element) ?? new Map<string, string>();
+    ["placeholder", "aria-label", "title"].forEach((name) => {
+      const current = element.getAttribute(name);
+      if (current && !attributes.has(name)) attributes.set(name, current);
+      const source = attributes.get(name);
+      if (source) element.setAttribute(name, translateSiteText(source, language));
+    });
+    originalAttributes.set(element, attributes);
+  });
 }
 
 export function LegacyRuntime({ language }: { language: SiteLanguage }) {
   const pathname = usePathname();
-  const router = useRouter();
 
   useEffect(() => {
     const clock = startClock();
@@ -129,57 +135,11 @@ export function LegacyRuntime({ language }: { language: SiteLanguage }) {
     };
     search?.addEventListener("input", onSearch);
 
-    const onSubmit = (event: SubmitEvent) => {
-      const form = event.target as HTMLFormElement;
-      if (!form.matches("[data-member-form]")) return;
-      event.preventDefault();
-      const data = new FormData(form);
-      const member: Member = {
-        name: String(data.get("name") || "James AI Club 會員"),
-        email: String(data.get("email") || ""),
-        level: "Starter",
-        points: 100,
-        purchases: readMember()?.purchases ?? [],
-        downloads: readMember()?.downloads ?? [],
-      };
-      localStorage.setItem(memberKey, JSON.stringify(member));
-      renderMemberState();
-    };
-
-    const onClick = (event: MouseEvent) => {
-      const target = event.target as HTMLElement;
-      if (target.closest("[data-member-logout]")) {
-        localStorage.removeItem(memberKey);
-        renderMemberState();
-        return;
-      }
-      const purchase = target.closest<HTMLButtonElement>("[data-purchase-action]");
-      if (!purchase) return;
-      const member = readMember();
-      if (!member) {
-        router.push("/login");
-        return;
-      }
-      const productId = purchase.dataset.purchaseAction;
-      if (productId && !member.purchases.includes(productId)) {
-        member.purchases.push(productId);
-        member.points += 30;
-        member.level = "Paid Member";
-        localStorage.setItem(memberKey, JSON.stringify(member));
-        window.alert("內容已在本機會員 MVP 中解鎖。");
-        renderMemberState();
-      }
-    };
-
-    document.addEventListener("submit", onSubmit);
-    document.addEventListener("click", onClick);
     return () => {
       window.clearInterval(clock);
       search?.removeEventListener("input", onSearch);
-      document.removeEventListener("submit", onSubmit);
-      document.removeEventListener("click", onClick);
     };
-  }, [language, pathname, router]);
+  }, [language, pathname]);
 
   return null;
 }

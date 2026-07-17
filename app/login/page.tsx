@@ -1,5 +1,5 @@
-import { LegacyPage } from "@/components/legacy-page";
+import { MemberHub } from "@/components/member-hub";
 
 export default function LoginPage() {
-  return <LegacyPage fileName="member.html" />;
+  return <MemberHub />;
 }

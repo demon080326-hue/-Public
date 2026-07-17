@@ -56,7 +56,12 @@ function extractMain(html: string) {
       if (!parts) return attribute;
       return `${parts[1]}${parts[2]}${rewriteLocalUrl(parts[3])}${parts[2]}`;
     })
-    .replace(/<script\b[\s\S]*?<\/script>/gi, "");
+    .replace(/<script\b[\s\S]*?<\/script>/gi, "")
+    // Payment and entitlement flows are intentionally unavailable until a server-side checkout exists.
+    .replace(/<button\b([^>]*\bdata-purchase-action\b[^>]*)>[\s\S]*?<\/button>/gi, (_button, attributes) =>
+      `<button${attributes} disabled aria-disabled="true" title="AI 商城購買功能暫未開放">暫未開放</button>`)
+    .replace(/<div\b([^>]*\bdata-purchase-content\b[^>]*)>[\s\S]*?<\/div>/gi, (_content, attributes) =>
+      `<div${attributes} hidden><strong>暫未開放</strong><p>正式金流上線後才會開放購買與解鎖。</p></div>`);
 }
 
 export function getLegacyPageHtml(fileName: string) {

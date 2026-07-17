@@ -1,5 +1,5 @@
-import { redirect } from "next/navigation";
+import { AdminAccessNotice } from "@/components/admin-access-notice";
 
-export default function AdminRedirectPage() {
-  redirect("/dashboard");
+export default function AdminPage() {
+  return <AdminAccessNotice page="dashboard" />;
 }

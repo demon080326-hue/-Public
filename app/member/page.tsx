@@ -1,5 +1,5 @@
-import { redirect } from "next/navigation";
+import { MemberHub } from "@/components/member-hub";
 
-export default function MemberRedirectPage() {
-  redirect("/login");
+export default function MemberPage() {
+  return <MemberHub />;
 }
