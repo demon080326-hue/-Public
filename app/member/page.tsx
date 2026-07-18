@@ -1,6 +1,6 @@
 import { redirect } from "next/navigation";
 import { MemberAuthHub } from "@/components/member-auth-hub";
-import { getCurrentMemberContext } from "@/lib/member-profile";
+import { getCurrentMemberContext, isSecurityAccessBlocked } from "@/lib/member-profile";
 
 export const dynamic = "force-dynamic";
 
@@ -18,10 +18,13 @@ export default async function MemberPage({ searchParams }: MemberPageProps) {
     searchParams,
   ]);
   if (!member) redirect("/login");
+  if (isSecurityAccessBlocked(member)) {
+    redirect(member.securityState?.requires_reverification ? "/login?notice=reverification-required" : "/login?error=auth-unavailable");
+  }
   const notice = first(params.notice);
-  const initialNotice = notice === "email-verified-member" || notice === "email-verification-required"
+  const initialNotice = notice === "email-verified-member" || notice === "email-verification-required" || notice === "reverification-passed"
     ? notice
     : null;
 
-  return <MemberAuthHub initialUser={member.user} initialProfile={member.profile} profileStatus={member.profileStatus} initialNotice={initialNotice} showPoints />;
+  return <MemberAuthHub initialUser={member.user} initialProfile={member.profile} profileStatus={member.profileStatus} initialSecurityState={member.securityState} securityStatus={member.securityStatus} initialNotice={initialNotice} showPoints />;
 }

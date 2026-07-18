@@ -1,6 +1,8 @@
 export type NewsCategory = "openai" | "claude" | "google" | "meta" | "microsoft" | "apple" | "research" | "other" | string;
 export type ReviewStatus = "pending" | "approved" | "rejected" | "spam" | "duplicate" | "needs_review";
 
+export type Json = string | number | boolean | null | { [key: string]: Json | undefined } | Json[];
+
 export type NewsItem = {
   id: string;
   fingerprint: string;
@@ -60,6 +62,48 @@ export type ProfileRow = {
   updated_at: string;
 };
 
+export type AuthSecurityStateRow = {
+  user_id: string;
+  failed_login_count: number;
+  requires_reverification: boolean;
+  locked_until: string | null;
+  last_failed_login_at: string | null;
+  last_successful_login_at: string | null;
+  created_at: string;
+  updated_at: string;
+};
+
+export type LoginAttemptRow = {
+  id: string;
+  user_id: string | null;
+  email_hash: string;
+  ip_hash: string | null;
+  user_agent: string | null;
+  success: boolean;
+  reason: string | null;
+  created_at: string;
+};
+
+export type AuthSecurityEventRow = {
+  id: string;
+  user_id: string | null;
+  event_type: string;
+  metadata: Json;
+  created_at: string;
+};
+
+export type EmailVerificationCodeRow = {
+  id: string;
+  user_id: string;
+  purpose: "login_reverification" | "email_verification" | "password_reset";
+  code_hash: string;
+  expires_at: string;
+  consumed_at: string | null;
+  attempts: number;
+  max_attempts: number;
+  created_at: string;
+};
+
 export type Database = {
   public: {
     Tables: {
@@ -73,6 +117,30 @@ export type Database = {
         Row: ProfileRow;
         Insert: Partial<ProfileRow> & Pick<ProfileRow, "user_id">;
         Update: Pick<Partial<ProfileRow>, "display_name">;
+        Relationships: [];
+      };
+      auth_security_state: {
+        Row: AuthSecurityStateRow;
+        Insert: Partial<AuthSecurityStateRow> & Pick<AuthSecurityStateRow, "user_id">;
+        Update: Partial<AuthSecurityStateRow>;
+        Relationships: [];
+      };
+      login_attempts: {
+        Row: LoginAttemptRow;
+        Insert: Partial<LoginAttemptRow> & Pick<LoginAttemptRow, "email_hash">;
+        Update: Partial<LoginAttemptRow>;
+        Relationships: [];
+      };
+      auth_security_events: {
+        Row: AuthSecurityEventRow;
+        Insert: Partial<AuthSecurityEventRow> & Pick<AuthSecurityEventRow, "event_type">;
+        Update: Partial<AuthSecurityEventRow>;
+        Relationships: [];
+      };
+      email_verification_codes: {
+        Row: EmailVerificationCodeRow;
+        Insert: Partial<EmailVerificationCodeRow> & Pick<EmailVerificationCodeRow, "user_id" | "purpose" | "code_hash" | "expires_at">;
+        Update: Partial<EmailVerificationCodeRow>;
         Relationships: [];
       };
       ai_sources: {
@@ -118,6 +186,30 @@ export type Database = {
       sync_own_profile_from_auth: {
         Args: Record<PropertyKey, never>;
         Returns: ProfileRow[];
+      };
+      record_auth_security_event: {
+        Args: { p_user_id: string | null; p_event_type: string; p_metadata?: Json };
+        Returns: string;
+      };
+      record_login_failure: {
+        Args: { p_email_hash: string; p_ip_hash: string | null; p_user_agent: string | null; p_reason: string };
+        Returns: Json;
+      };
+      record_login_success: {
+        Args: { p_user_id: string; p_email_hash: string; p_ip_hash: string | null; p_user_agent: string | null };
+        Returns: Json;
+      };
+      clear_reverification: {
+        Args: { p_user_id: string };
+        Returns: Json;
+      };
+      create_email_verification_code: {
+        Args: { p_user_id: string; p_purpose: string; p_plain_code: string };
+        Returns: string;
+      };
+      verify_email_verification_code: {
+        Args: { p_user_id: string; p_purpose: string; p_plain_code: string };
+        Returns: boolean;
       };
     };
     Enums: Record<string, never>;

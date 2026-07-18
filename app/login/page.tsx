@@ -20,9 +20,11 @@ export default async function LoginPage({ searchParams }: LoginPageProps) {
   const errorValue = first(params.error);
   const initialNotice = noticeValue === "admin-auth-required"
     ? noticeValue
+    : noticeValue === "reverification-required"
+      ? noticeValue
     : errorValue === "auth_callback_failed" || errorValue === "auth-unavailable"
       ? errorValue
       : null;
 
-  return <MemberAuthHub initialUser={member?.user ?? null} initialProfile={member?.profile ?? null} profileStatus={member?.profileStatus ?? null} initialNotice={initialNotice} />;
+  return <MemberAuthHub initialUser={member?.user ?? null} initialProfile={member?.profile ?? null} profileStatus={member?.profileStatus ?? null} initialSecurityState={member?.securityState ?? null} securityStatus={member?.securityStatus ?? null} initialNotice={initialNotice} />;
 }

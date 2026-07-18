@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { parseAiNewsPayload } from "@/lib/ai-news";
+import { getCurrentMemberContext, hasAdminAccess, isSecurityAccessBlocked } from "@/lib/member-profile";
 import { getSupabaseAdminClient } from "@/lib/supabase-admin";
 
 export const runtime = "nodejs";
@@ -17,6 +18,17 @@ function errorResponse(status: number, error: Omit<ApiError, "ok">) {
 }
 
 export async function POST(request: Request) {
+  const member = await getCurrentMemberContext();
+  if (!member) {
+    return errorResponse(401, { message: "請先登入管理員帳號。", code: "AUTH_REQUIRED" });
+  }
+  if (isSecurityAccessBlocked(member)) {
+    return errorResponse(403, { message: "請先完成 Email 重新驗證。", code: "REVERIFICATION_REQUIRED" });
+  }
+  if (!hasAdminAccess(member.profile?.role)) {
+    return errorResponse(403, { message: "此功能僅限管理員使用。", code: "ADMIN_REQUIRED" });
+  }
+
   let body: Record<string, unknown>;
 
   try {

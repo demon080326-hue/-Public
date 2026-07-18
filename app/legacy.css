@@ -2443,6 +2443,31 @@ body.menu-open .site-menu { transform: translateX(0); }
   margin: 4px 0 0;
 }
 
+.reverification-card {
+  display: grid;
+  max-width: 720px;
+  gap: 18px;
+  border-color: #dfbd68;
+  background: #fffdf5;
+}
+
+.reverification-card h2 {
+  margin: 10px 0 6px;
+}
+
+.reverification-card > .btn {
+  width: fit-content;
+}
+
+.reverification-card .member-verify-form {
+  padding-top: 16px;
+  border-top: 1px solid var(--border);
+}
+
+.reverification-card .member-verify-form .btn {
+  width: fit-content;
+}
+
 .member-profile-details {
   display: grid;
   gap: 9px;
@@ -2678,6 +2703,11 @@ body.menu-open .site-menu { transform: translateX(0); }
   .auth-user-card {
     align-items: stretch;
     flex-direction: column;
+  }
+
+  .reverification-card > .btn,
+  .reverification-card .member-verify-form .btn {
+    width: 100%;
   }
 
   .member-profile-details div {

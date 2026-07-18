@@ -7,7 +7,7 @@ import { useSiteLanguage } from "@/hooks/use-site-language";
 import type { AuthUserSummary } from "@/lib/auth-user";
 import { getSupabaseBrowserClient } from "@/lib/supabase/browser";
 import type { SiteLanguage } from "@/lib/site-language";
-import type { ProfileRow } from "@/types/database";
+import type { AuthSecurityStateRow, ProfileRow } from "@/types/database";
 
 type AuthMode = "login" | "register" | "forgot";
 
@@ -15,7 +15,9 @@ type MemberAuthHubProps = {
   initialUser: AuthUserSummary | null;
   initialProfile?: ProfileRow | null;
   profileStatus?: "ready" | "missing" | "error" | null;
-  initialNotice?: "admin-auth-required" | "auth_callback_failed" | "auth-unavailable" | "email-verified-member" | "email-verification-required" | null;
+  initialSecurityState?: AuthSecurityStateRow | null;
+  securityStatus?: "ready" | "missing" | "error" | null;
+  initialNotice?: "admin-auth-required" | "auth_callback_failed" | "auth-unavailable" | "email-verified-member" | "email-verification-required" | "reverification-required" | "reverification-passed" | null;
   showPoints?: boolean;
 };
 
@@ -70,6 +72,21 @@ const copy = {
     invalidLink: "登入或驗證連結無效或已過期，請重新申請。",
     adminRequired: "請先登入。管理頁面仍須管理員角色，普通會員不會取得後台操作權限。",
     memberActivated: "Email 已驗證，會員已正式啟用。",
+    reverificationRequired: "為了保護帳號安全，請先完成 Email 驗證後再登入。",
+    reverificationPassed: "Email 重新驗證完成，帳號已解除保護狀態。",
+    reverificationTitle: "Email 重新驗證",
+    reverificationBody: "此帳號已連續登入失敗 3 次。完成信箱驗證前，會員中心與管理功能都會維持鎖定。",
+    verificationEmail: "驗證信箱",
+    verificationCode: "6 位數驗證碼",
+    sendVerificationCode: "寄送驗證碼",
+    resendVerificationCode: "重新寄送驗證碼",
+    verifyCode: "完成驗證",
+    sendingCode: "寄送中...",
+    verifyingCode: "驗證中...",
+    codeSent: "驗證信已寄出，請輸入信中的 6 位數驗證碼。",
+    codeInvalid: "驗證碼無效或已過期，請重新申請後再試。",
+    codeHelp: "驗證碼只能輸入 6 位數字，且不會顯示在網站或儲存在瀏覽器。",
+    providerNote: "目前由 Supabase Auth 既有 Email OTP 流程寄送；自訂 SMTP 與正式寄信服務尚未啟用。",
     signingIn: "登入中...",
     submitting: "處理中...",
   },
@@ -123,6 +140,21 @@ const copy = {
     invalidLink: "This sign-in or verification link is invalid or expired.",
     adminRequired: "Please sign in first. Admin pages still require an administrator role.",
     memberActivated: "Email confirmed. Your membership is now active.",
+    reverificationRequired: "For account security, complete email verification before signing in again.",
+    reverificationPassed: "Email reverification is complete and the account protection state is cleared.",
+    reverificationTitle: "Email reverification",
+    reverificationBody: "This account has reached three consecutive failed sign-in attempts. Member and admin access remain locked until verification is complete.",
+    verificationEmail: "Verification email",
+    verificationCode: "6-digit verification code",
+    sendVerificationCode: "Send verification code",
+    resendVerificationCode: "Resend verification code",
+    verifyCode: "Verify account",
+    sendingCode: "Sending...",
+    verifyingCode: "Verifying...",
+    codeSent: "Verification email sent. Enter the 6-digit code from the email.",
+    codeInvalid: "The code is invalid or expired. Request a new code and try again.",
+    codeHelp: "Only six digits are accepted. The code is never displayed by the site or stored in the browser.",
+    providerNote: "Email is currently sent through the existing Supabase Auth OTP flow. Custom SMTP is not enabled yet.",
     signingIn: "Signing in...",
     submitting: "Working...",
   },
@@ -176,6 +208,21 @@ const copy = {
     invalidLink: "ログインまたは確認リンクが無効か、期限切れです。",
     adminRequired: "先にログインしてください。管理ページには管理者権限が必要です。",
     memberActivated: "メール確認済みです。正式会員として有効になりました。",
+    reverificationRequired: "アカウント保護のため、再ログイン前にメール確認を完了してください。",
+    reverificationPassed: "メール再確認が完了し、アカウントの保護状態を解除しました。",
+    reverificationTitle: "メール再確認",
+    reverificationBody: "ログインに3回連続で失敗したため、確認が完了するまで会員・管理機能をロックしています。",
+    verificationEmail: "確認メール",
+    verificationCode: "6桁の確認コード",
+    sendVerificationCode: "確認コードを送信",
+    resendVerificationCode: "確認コードを再送信",
+    verifyCode: "確認を完了",
+    sendingCode: "送信中...",
+    verifyingCode: "確認中...",
+    codeSent: "確認メールを送信しました。メールに記載された6桁のコードを入力してください。",
+    codeInvalid: "コードが無効か期限切れです。再送信してお試しください。",
+    codeHelp: "入力できるのは6桁の数字のみです。コードは画面表示やブラウザ保存を行いません。",
+    providerNote: "現在は Supabase Auth の既存 Email OTP を使用します。カスタム SMTP は未設定です。",
     signingIn: "ログイン中...",
     submitting: "処理中...",
   },
@@ -187,7 +234,14 @@ function callbackUrl(nextPath: string) {
   return url.toString();
 }
 
-export function MemberAuthHub({ initialUser, initialProfile = null, profileStatus = null, initialNotice, showPoints = false }: MemberAuthHubProps) {
+function maskEmail(email: string) {
+  const [name, domain] = email.split("@");
+  if (!domain) return "***";
+  const visible = name.slice(0, 1);
+  return `${visible}${"*".repeat(Math.max(3, Math.min(name.length - 1, 8)))}@${domain}`;
+}
+
+export function MemberAuthHub({ initialUser, initialProfile = null, profileStatus = null, initialSecurityState = null, securityStatus = null, initialNotice, showPoints = false }: MemberAuthHubProps) {
   const language = useSiteLanguage();
   const text = copy[language];
   const router = useRouter();
@@ -195,6 +249,8 @@ export function MemberAuthHub({ initialUser, initialProfile = null, profileStatu
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
+  const [verificationCode, setVerificationCode] = useState("");
+  const [verificationCodeRequested, setVerificationCodeRequested] = useState(false);
   const [busy, setBusy] = useState(false);
   const [notice, setNotice] = useState(() => {
     if (initialNotice === "admin-auth-required") return text.adminRequired;
@@ -202,8 +258,11 @@ export function MemberAuthHub({ initialUser, initialProfile = null, profileStatu
     if (initialNotice === "auth-unavailable") return text.unavailable;
     if (initialNotice === "email-verified-member") return text.memberActivated;
     if (initialNotice === "email-verification-required") return text.activationEmailPending;
+    if (initialNotice === "reverification-required") return text.reverificationRequired;
+    if (initialNotice === "reverification-passed") return text.reverificationPassed;
     return "";
   });
+  const requiresReverification = initialSecurityState?.requires_reverification === true;
   const roleLabel = initialProfile
     ? initialProfile.role === "owner"
       ? text.roleOwner
@@ -231,29 +290,89 @@ export function MemberAuthHub({ initialUser, initialProfile = null, profileStatu
 
   async function handleLogin(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
-    const supabase = clientOrNotice();
-    if (!supabase) return;
-
     setBusy(true);
     setNotice("");
-    const { data: signInData, error } = await supabase.auth.signInWithPassword({ email: email.trim(), password });
-    if (error) {
+
+    let response: Response;
+    let result: { ok?: boolean; requiresReverification?: boolean; memberActivated?: boolean } = {};
+    try {
+      response = await fetch("/api/auth/login", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email: email.trim(), password }),
+      });
+      result = (await response.json()) as typeof result;
+    } catch {
       setBusy(false);
-      setNotice(error.code === "email_not_confirmed" ? text.activationEmailPending : text.loginError);
+      setNotice(text.unavailable);
       return;
     }
 
-    const { data: syncedProfiles } = await supabase.rpc("sync_own_profile_from_auth");
-    const syncedProfile = syncedProfiles?.[0] ?? null;
-    const notice = syncedProfile?.email_verified && syncedProfile.role === "member"
-      ? "?notice=email-verified-member"
-      : !signInData.user?.email_confirmed_at
-        ? "?notice=email-verification-required"
-        : "";
+    setPassword("");
+    if (!response.ok || result.ok !== true) {
+      setBusy(false);
+      setNotice(response.status === 503 ? text.unavailable : text.loginError);
+      return;
+    }
 
     setBusy(false);
-    router.replace(`/member${notice}`);
+    if (result.requiresReverification) {
+      router.replace("/login?notice=reverification-required");
+      router.refresh();
+      return;
+    }
+
+    router.replace(result.memberActivated ? "/member?notice=email-verified-member" : "/member");
     router.refresh();
+  }
+
+  async function handleRequestVerificationCode() {
+    setBusy(true);
+    setNotice("");
+    try {
+      const response = await fetch("/api/auth/reverification/request", { method: "POST" });
+      if (!response.ok) {
+        setNotice(response.status === 429 ? text.codeInvalid : text.unavailable);
+      } else {
+        setVerificationCodeRequested(true);
+        setNotice(text.codeSent);
+      }
+    } catch {
+      setNotice(text.unavailable);
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function handleVerifyCode(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    if (!/^\d{6}$/.test(verificationCode)) {
+      setNotice(text.codeInvalid);
+      return;
+    }
+
+    setBusy(true);
+    setNotice("");
+    try {
+      const response = await fetch("/api/auth/reverification/verify", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ code: verificationCode }),
+      });
+
+      if (!response.ok) {
+        setNotice(response.status === 503 ? text.unavailable : text.codeInvalid);
+        return;
+      }
+
+      setVerificationCode("");
+      router.replace("/member?notice=reverification-passed");
+      router.refresh();
+    } catch {
+      setNotice(text.unavailable);
+    } finally {
+      setBusy(false);
+    }
   }
 
   async function handleRegister(event: FormEvent<HTMLFormElement>) {
@@ -314,7 +433,45 @@ export function MemberAuthHub({ initialUser, initialProfile = null, profileStatu
           <p>{text.description}</p>
         </div>
 
-        {initialUser ? (
+        {initialUser && requiresReverification ? (
+          <article className="member-hub-card reverification-card">
+            <div>
+              <span className="tag">REVERIFICATION REQUIRED</span>
+              <h2>{text.reverificationTitle}</h2>
+              <p>{text.reverificationBody}</p>
+            </div>
+            <dl className="member-profile-details">
+              <div><dt>{text.verificationEmail}</dt><dd>{maskEmail(initialUser.email)}</dd></div>
+              <div><dt>{text.profileRole}</dt><dd>{initialProfile?.role ?? "pending_member"}</dd></div>
+              <div><dt>Security state</dt><dd>{securityStatus === "ready" ? "requires_reverification" : "unavailable"}</dd></div>
+            </dl>
+            <button className="btn secondary" type="button" onClick={handleRequestVerificationCode} disabled={busy}>
+              {busy ? text.sendingCode : verificationCodeRequested ? text.resendVerificationCode : text.sendVerificationCode}
+            </button>
+            <form className="member-verify-form" onSubmit={handleVerifyCode}>
+              <label>
+                {text.verificationCode}
+                <input
+                  className="form-input verification-code"
+                  type="text"
+                  inputMode="numeric"
+                  autoComplete="one-time-code"
+                  pattern="[0-9]{6}"
+                  maxLength={6}
+                  value={verificationCode}
+                  onChange={(event) => setVerificationCode(event.target.value.replace(/\D/g, "").slice(0, 6))}
+                  required
+                />
+              </label>
+              <small>{text.codeHelp}</small>
+              <button className="btn" type="submit" disabled={busy || verificationCode.length !== 6}>
+                {busy ? text.verifyingCode : text.verifyCode}
+              </button>
+            </form>
+            <p className="auth-security-note">{text.providerNote}</p>
+            <button className="btn secondary" type="button" onClick={handleSignOut} disabled={busy}>{text.signOut}</button>
+          </article>
+        ) : initialUser ? (
           <article className="member-hub-card auth-user-card">
             <div>
               <span className="tag">{initialUser.emailVerified ? "VERIFIED" : "PENDING"}</span>

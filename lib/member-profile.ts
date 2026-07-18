@@ -1,16 +1,22 @@
 import type { AuthUserSummary } from "@/lib/auth-user";
 import { getAuthUserSummary } from "@/lib/auth-user";
 import { getSupabaseServerClient } from "@/lib/supabase/server";
-import type { MemberRole, ProfileRow } from "@/types/database";
+import type { AuthSecurityStateRow, MemberRole, ProfileRow } from "@/types/database";
 
 export type CurrentMemberContext = {
   user: AuthUserSummary;
   profile: ProfileRow | null;
   profileStatus: "ready" | "missing" | "error";
+  securityState: AuthSecurityStateRow | null;
+  securityStatus: "ready" | "missing" | "error";
 };
 
 export function hasAdminAccess(role: MemberRole | null | undefined) {
   return role === "admin" || role === "owner";
+}
+
+export function isSecurityAccessBlocked(member: CurrentMemberContext) {
+  return member.securityStatus !== "ready" || member.securityState?.requires_reverification !== false;
 }
 
 type CurrentMemberOptions = {
@@ -24,14 +30,36 @@ export async function getCurrentMemberContext(
   if (!user) return null;
 
   const supabase = await getSupabaseServerClient();
-  if (!supabase) return { user, profile: null, profileStatus: "error" };
+  if (!supabase) {
+    return {
+      user,
+      profile: null,
+      profileStatus: "error",
+      securityState: null,
+      securityStatus: "error",
+    };
+  }
 
-  if (options.syncProfileFromAuth) {
+  const { data: securityState, error: securityError } = await supabase
+    .from("auth_security_state")
+    .select("user_id, failed_login_count, requires_reverification, locked_until, last_failed_login_at, last_successful_login_at, created_at, updated_at")
+    .eq("user_id", user.id)
+    .maybeSingle();
+
+  const securityStatus = securityError ? "error" : securityState ? "ready" : "missing";
+
+  if (options.syncProfileFromAuth && securityStatus === "ready" && securityState && !securityState.requires_reverification) {
     const { data: syncedProfiles, error: syncError } = await supabase.rpc("sync_own_profile_from_auth");
     const syncedProfile = syncedProfiles?.[0] ?? null;
 
     if (!syncError && syncedProfile) {
-      return { user, profile: syncedProfile, profileStatus: "ready" };
+      return {
+        user,
+        profile: syncedProfile,
+        profileStatus: "ready",
+        securityState,
+        securityStatus,
+      };
     }
   }
 
@@ -41,7 +69,11 @@ export async function getCurrentMemberContext(
     .eq("user_id", user.id)
     .maybeSingle();
 
-  if (error) return { user, profile: null, profileStatus: "error" };
-  if (!data) return { user, profile: null, profileStatus: "missing" };
-  return { user, profile: data, profileStatus: "ready" };
+  if (error) {
+    return { user, profile: null, profileStatus: "error", securityState, securityStatus };
+  }
+  if (!data) {
+    return { user, profile: null, profileStatus: "missing", securityState, securityStatus };
+  }
+  return { user, profile: data, profileStatus: "ready", securityState, securityStatus };
 }
