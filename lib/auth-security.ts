@@ -1,7 +1,7 @@
 import "server-only";
 
 import { createHash } from "node:crypto";
-import { getSupabaseAdminClient } from "@/lib/supabase/admin";
+import { getSupabaseAdminClient } from "@/lib/supabase-admin";
 import type { AuthSecurityStateRow, Json } from "@/types/database";
 
 type SecurityOperationResult = {
