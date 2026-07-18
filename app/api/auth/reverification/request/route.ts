@@ -1,39 +1,79 @@
+import { randomInt } from "node:crypto";
 import { NextResponse } from "next/server";
-import { getAuthSecurityState, recordAuthSecurityEvent } from "@/lib/auth-security";
-import { getSupabaseServerClient } from "@/lib/supabase/server";
+import {
+  cancelReverificationCode,
+  createReverificationCode,
+  getReverificationTarget,
+  recordAuthSecurityEvent,
+} from "@/lib/auth-security";
+import { getEmailDeliveryConfiguration, sendEmail } from "@/lib/email/send-email";
+import { buildReverificationEmail } from "@/lib/email/templates";
 
 export const runtime = "nodejs";
 
-export async function POST() {
-  const supabase = await getSupabaseServerClient();
-  if (!supabase) {
-    return NextResponse.json({ ok: false, message: "驗證服務目前無法使用，請稍後再試。" }, { status: 503 });
+const GENERIC_SUCCESS = "如果此帳號需要重新驗證，我們已寄出 6 位數驗證碼。";
+const DELIVERY_NOT_CONFIGURED = "驗證信服務尚未設定，請稍後再試。";
+
+function json(body: Record<string, unknown>, status = 200) {
+  const response = NextResponse.json(body, { status });
+  response.headers.set("Cache-Control", "private, no-store");
+  return response;
+}
+
+function isValidEmail(email: string) {
+  return email.length <= 320 && /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
+}
+
+export async function POST(request: Request) {
+  const configuration = getEmailDeliveryConfiguration();
+  if (!configuration.configured) {
+    return json({ ok: false, error: "EMAIL_NOT_CONFIGURED", message: DELIVERY_NOT_CONFIGURED }, 503);
   }
 
-  const { data, error } = await supabase.auth.getUser();
-  const user = data.user;
-  if (error || !user?.email) {
-    return NextResponse.json({ ok: false, message: "請先重新登入。" }, { status: 401 });
+  let email = "";
+  try {
+    const body = (await request.json()) as { email?: unknown };
+    email = typeof body.email === "string" ? body.email.trim().toLowerCase() : "";
+  } catch {
+    return json({ ok: true, message: GENERIC_SUCCESS });
   }
 
-  const securityResult = await getAuthSecurityState(user.id);
-  if (!securityResult.ok || !securityResult.state) {
-    return NextResponse.json({ ok: false, message: "驗證服務目前無法使用，請稍後再試。" }, { status: 503 });
+  if (!isValidEmail(email)) {
+    return json({ ok: true, message: GENERIC_SUCCESS });
   }
 
-  if (!securityResult.state.requires_reverification) {
-    return NextResponse.json({ ok: false, message: "此帳號目前不需要重新驗證。" }, { status: 409 });
+  const target = await getReverificationTarget(email);
+  if (!target || !target.requiresReverification) {
+    return json({ ok: true, message: GENERIC_SUCCESS });
   }
 
-  const { error: otpError } = await supabase.auth.signInWithOtp({
-    email: user.email,
-    options: { shouldCreateUser: false },
+  const plainCode = randomInt(0, 1_000_000).toString().padStart(6, "0");
+  const codeId = await createReverificationCode(target.userId, plainCode);
+  if (!codeId) {
+    return json({ ok: true, message: GENERIC_SUCCESS });
+  }
+
+  const template = buildReverificationEmail(plainCode);
+  const delivery = await sendEmail({
+    to: email,
+    ...template,
+    idempotencyKey: `reverification-${codeId}`,
   });
 
-  if (otpError) {
-    return NextResponse.json({ ok: false, message: "目前無法寄送驗證碼，請稍後再試。" }, { status: 429 });
+  if (!delivery.ok) {
+    await cancelReverificationCode(codeId, target.userId);
+    await recordAuthSecurityEvent(target.userId, "verification_email_failed", {
+      purpose: "login_reverification",
+      provider: "resend",
+      reason: delivery.reason,
+    });
+    return json({ ok: true, message: GENERIC_SUCCESS });
   }
 
-  await recordAuthSecurityEvent(user.id, "reverification_requested", { provider: "supabase_auth_email_otp" });
-  return NextResponse.json({ ok: true, message: "驗證信已寄出，請輸入信中的 6 位數驗證碼。" });
+  await recordAuthSecurityEvent(target.userId, "verification_email_sent", {
+    purpose: "login_reverification",
+    provider: delivery.provider,
+  });
+
+  return json({ ok: true, message: GENERIC_SUCCESS });
 }

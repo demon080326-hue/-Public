@@ -17,6 +17,11 @@ function normalizeEmail(email: string) {
   return email.trim().toLowerCase();
 }
 
+export type ReverificationTarget = {
+  userId: string;
+  requiresReverification: boolean;
+};
+
 function getRequestIpHash(request: Request) {
   const forwarded = request.headers.get("x-forwarded-for")?.split(",")[0]?.trim();
   const ip = forwarded || request.headers.get("x-real-ip")?.trim();
@@ -116,4 +121,80 @@ export async function recordAuthSecurityEvent(userId: string, eventType: string,
   }
 
   return true;
+}
+
+export async function getReverificationTarget(email: string): Promise<ReverificationTarget | null> {
+  const admin = getSupabaseAdminClient();
+  if (!admin) return null;
+
+  const { data, error } = await admin.rpc("get_reverification_target", {
+    p_email_hash: sha256(normalizeEmail(email)),
+  });
+
+  if (error) {
+    console.error("Reverification target lookup failed:", error.message);
+    return null;
+  }
+
+  const target = data?.[0];
+  if (!target) return null;
+
+  return {
+    userId: target.target_user_id,
+    requiresReverification: target.requires_reverification,
+  };
+}
+
+export async function createReverificationCode(userId: string, plainCode: string) {
+  const admin = getSupabaseAdminClient();
+  if (!admin) return null;
+
+  const { data, error } = await admin.rpc("create_email_verification_code", {
+    p_user_id: userId,
+    p_purpose: "login_reverification",
+    p_plain_code: plainCode,
+  });
+
+  if (error) {
+    console.error("Reverification code creation failed:", error.message);
+    return null;
+  }
+
+  return data;
+}
+
+export async function cancelReverificationCode(codeId: string, userId: string) {
+  const admin = getSupabaseAdminClient();
+  if (!admin) return false;
+
+  const { data, error } = await admin.rpc("cancel_email_verification_code", {
+    p_code_id: codeId,
+    p_user_id: userId,
+    p_purpose: "login_reverification",
+  });
+
+  if (error) {
+    console.error("Reverification code cancellation failed:", error.message);
+    return false;
+  }
+
+  return data === true;
+}
+
+export async function verifyReverificationCode(userId: string, plainCode: string) {
+  const admin = getSupabaseAdminClient();
+  if (!admin) return { ok: false, verified: false };
+
+  const { data, error } = await admin.rpc("verify_email_verification_code", {
+    p_user_id: userId,
+    p_purpose: "login_reverification",
+    p_plain_code: plainCode,
+  });
+
+  if (error) {
+    console.error("Reverification code verification failed:", error.message);
+    return { ok: false, verified: false };
+  }
+
+  return { ok: true, verified: data === true };
 }

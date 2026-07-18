@@ -22,6 +22,8 @@ export default async function LoginPage({ searchParams }: LoginPageProps) {
     ? noticeValue
     : noticeValue === "reverification-required"
       ? noticeValue
+    : noticeValue === "reverification-passed"
+      ? noticeValue
     : errorValue === "auth_callback_failed" || errorValue === "auth-unavailable"
       ? errorValue
       : null;

@@ -1,6 +1,6 @@
 "use client";
 
-import { FormEvent, useState } from "react";
+import { FormEvent, useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { MemberHub } from "@/components/member-hub";
 import { useSiteLanguage } from "@/hooks/use-site-language";
@@ -83,10 +83,14 @@ const copy = {
     verifyCode: "完成驗證",
     sendingCode: "寄送中...",
     verifyingCode: "驗證中...",
-    codeSent: "驗證信已寄出，請輸入信中的 6 位數驗證碼。",
-    codeInvalid: "驗證碼無效或已過期，請重新申請後再試。",
+    codeSent: "如果此帳號需要重新驗證，我們已寄出 6 位數驗證碼。",
+    codeSendFailed: "目前無法寄出驗證信，請稍後再試。",
+    codeServiceNotConfigured: "驗證信服務尚未設定，請稍後再試。",
+    codeVerified: "帳號安全驗證完成，請重新登入。",
+    codeInvalid: "驗證碼不正確或已過期，請確認後再試。",
+    resendCooldown: "可重新寄送倒數",
     codeHelp: "驗證碼只能輸入 6 位數字，且不會顯示在網站或儲存在瀏覽器。",
-    providerNote: "目前由 Supabase Auth 既有 Email OTP 流程寄送；自訂 SMTP 與正式寄信服務尚未啟用。",
+    providerNote: "驗證碼由網站伺服器安全產生，資料庫只保存雜湊值；寄信服務未設定時不會顯示或回傳驗證碼。",
     signingIn: "登入中...",
     submitting: "處理中...",
   },
@@ -151,10 +155,14 @@ const copy = {
     verifyCode: "Verify account",
     sendingCode: "Sending...",
     verifyingCode: "Verifying...",
-    codeSent: "Verification email sent. Enter the 6-digit code from the email.",
-    codeInvalid: "The code is invalid or expired. Request a new code and try again.",
+    codeSent: "If this account requires reverification, we have sent a 6-digit code.",
+    codeSendFailed: "We cannot send the verification email right now. Please try again later.",
+    codeServiceNotConfigured: "The verification email service is not configured. Please try again later.",
+    codeVerified: "Account security verification is complete. Please sign in again.",
+    codeInvalid: "The code is incorrect or expired. Please check it and try again.",
+    resendCooldown: "Resend available in",
     codeHelp: "Only six digits are accepted. The code is never displayed by the site or stored in the browser.",
-    providerNote: "Email is currently sent through the existing Supabase Auth OTP flow. Custom SMTP is not enabled yet.",
+    providerNote: "Codes are generated securely on the server and only a hash is stored. Codes are never displayed or returned when email delivery is unavailable.",
     signingIn: "Signing in...",
     submitting: "Working...",
   },
@@ -219,10 +227,14 @@ const copy = {
     verifyCode: "確認を完了",
     sendingCode: "送信中...",
     verifyingCode: "確認中...",
-    codeSent: "確認メールを送信しました。メールに記載された6桁のコードを入力してください。",
-    codeInvalid: "コードが無効か期限切れです。再送信してお試しください。",
+    codeSent: "このアカウントに再確認が必要な場合、6桁のコードを送信しました。",
+    codeSendFailed: "現在、確認メールを送信できません。しばらくしてからお試しください。",
+    codeServiceNotConfigured: "確認メールサービスは未設定です。しばらくしてからお試しください。",
+    codeVerified: "アカウントの安全確認が完了しました。もう一度ログインしてください。",
+    codeInvalid: "コードが正しくないか期限切れです。確認してもう一度お試しください。",
+    resendCooldown: "再送信まで",
     codeHelp: "入力できるのは6桁の数字のみです。コードは画面表示やブラウザ保存を行いません。",
-    providerNote: "現在は Supabase Auth の既存 Email OTP を使用します。カスタム SMTP は未設定です。",
+    providerNote: "コードはサーバーで安全に生成され、データベースにはハッシュのみ保存されます。送信設定がない場合もコードを表示・返却しません。",
     signingIn: "ログイン中...",
     submitting: "処理中...",
   },
@@ -251,6 +263,7 @@ export function MemberAuthHub({ initialUser, initialProfile = null, profileStatu
   const [confirmPassword, setConfirmPassword] = useState("");
   const [verificationCode, setVerificationCode] = useState("");
   const [verificationCodeRequested, setVerificationCodeRequested] = useState(false);
+  const [resendCooldownSeconds, setResendCooldownSeconds] = useState(0);
   const [busy, setBusy] = useState(false);
   const [notice, setNotice] = useState(() => {
     if (initialNotice === "admin-auth-required") return text.adminRequired;
@@ -281,6 +294,14 @@ export function MemberAuthHub({ initialUser, initialProfile = null, profileStatu
         : initialProfile?.role === "admin" || initialProfile?.role === "owner"
           ? text.activationAdmin
           : text.activationPending;
+
+  useEffect(() => {
+    if (resendCooldownSeconds <= 0) return;
+    const timer = window.setTimeout(() => {
+      setResendCooldownSeconds((current) => Math.max(0, current - 1));
+    }, 1000);
+    return () => window.clearTimeout(timer);
+  }, [resendCooldownSeconds]);
 
   function clientOrNotice() {
     const client = getSupabaseBrowserClient();
@@ -330,11 +351,17 @@ export function MemberAuthHub({ initialUser, initialProfile = null, profileStatu
     setBusy(true);
     setNotice("");
     try {
-      const response = await fetch("/api/auth/reverification/request", { method: "POST" });
+      const response = await fetch("/api/auth/reverification/request", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email: initialUser?.email || "" }),
+      });
+      const result = (await response.json().catch(() => null)) as { error?: unknown } | null;
       if (!response.ok) {
-        setNotice(response.status === 429 ? text.codeInvalid : text.unavailable);
+        setNotice(result?.error === "EMAIL_NOT_CONFIGURED" ? text.codeServiceNotConfigured : text.codeSendFailed);
       } else {
         setVerificationCodeRequested(true);
+        setResendCooldownSeconds(60);
         setNotice(text.codeSent);
       }
     } catch {
@@ -357,7 +384,7 @@ export function MemberAuthHub({ initialUser, initialProfile = null, profileStatu
       const response = await fetch("/api/auth/reverification/verify", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ code: verificationCode }),
+        body: JSON.stringify({ email: initialUser?.email || "", code: verificationCode }),
       });
 
       if (!response.ok) {
@@ -366,7 +393,8 @@ export function MemberAuthHub({ initialUser, initialProfile = null, profileStatu
       }
 
       setVerificationCode("");
-      router.replace("/member?notice=reverification-passed");
+      setNotice(text.codeVerified);
+      router.replace("/login?notice=reverification-passed");
       router.refresh();
     } catch {
       setNotice(text.unavailable);
@@ -445,8 +473,14 @@ export function MemberAuthHub({ initialUser, initialProfile = null, profileStatu
               <div><dt>{text.profileRole}</dt><dd>{initialProfile?.role ?? "pending_member"}</dd></div>
               <div><dt>Security state</dt><dd>{securityStatus === "ready" ? "requires_reverification" : "unavailable"}</dd></div>
             </dl>
-            <button className="btn secondary" type="button" onClick={handleRequestVerificationCode} disabled={busy}>
-              {busy ? text.sendingCode : verificationCodeRequested ? text.resendVerificationCode : text.sendVerificationCode}
+            <button className="btn secondary" type="button" onClick={handleRequestVerificationCode} disabled={busy || resendCooldownSeconds > 0}>
+              {busy
+                ? text.sendingCode
+                : resendCooldownSeconds > 0
+                  ? `${text.resendCooldown} ${resendCooldownSeconds}s`
+                  : verificationCodeRequested
+                    ? text.resendVerificationCode
+                    : text.sendVerificationCode}
             </button>
             <form className="member-verify-form" onSubmit={handleVerifyCode}>
               <label>

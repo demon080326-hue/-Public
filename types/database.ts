@@ -211,6 +211,14 @@ export type Database = {
         Args: { p_user_id: string; p_purpose: string; p_plain_code: string };
         Returns: boolean;
       };
+      get_reverification_target: {
+        Args: { p_email_hash: string };
+        Returns: { target_user_id: string; requires_reverification: boolean }[];
+      };
+      cancel_email_verification_code: {
+        Args: { p_code_id: string; p_user_id: string; p_purpose: string };
+        Returns: boolean;
+      };
     };
     Enums: Record<string, never>;
     CompositeTypes: Record<string, never>;
