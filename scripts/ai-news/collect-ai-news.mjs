@@ -1,10 +1,12 @@
 import { existsSync, readFileSync } from "node:fs";
 import { resolve } from "node:path";
 import { createClient } from "@supabase/supabase-js";
+import * as cheerio from "cheerio";
 import { aiNewsSources } from "./sources.mjs";
 
 const MAX_ITEMS_PER_SOURCE = Number(process.env.AI_NEWS_MAX_ITEMS ?? 5);
 const REQUEST_TIMEOUT_MS = Number(process.env.AI_NEWS_REQUEST_TIMEOUT_MS ?? 20000);
+const RETRYABLE_STATUS_CODES = new Set([429, 500, 502, 503, 504]);
 
 function loadLocalEnv() {
   for (const file of [".env.local", ".env"]) {
@@ -99,6 +101,8 @@ function classifyNews(title, description, sourceName) {
   if (source === "openai" || source === "anthropic") return "AI 平台";
   if (source === "hugging face") return "AI 工具";
   if (source === "google deepmind") return "研究論文";
+  if (source === "brief ai") return "AI 電子報";
+  if (source === "aibase ai 日報") return "AI 日報";
 
   if (hasAny(body, ["model", "llm", "inference", "transformer", "benchmark"])) return "技術趨勢";
   if (hasAny(body, ["release", "launch", "announce", "update"])) return "產品發布";
@@ -190,6 +194,146 @@ async function fetchRss(source) {
   }
 }
 
+function sourceItemLimit(source) {
+  const configured = Number(source.maxItems ?? MAX_ITEMS_PER_SOURCE);
+  return Number.isFinite(configured) && configured > 0 ? Math.floor(configured) : MAX_ITEMS_PER_SOURCE;
+}
+
+function sleep(milliseconds) {
+  return new Promise((resolvePromise) => setTimeout(resolvePromise, milliseconds));
+}
+
+async function fetchHtml(source) {
+  console.log(`HTML 抓取開始：${source.name} ${source.url}`);
+
+  let lastError;
+  for (let attempt = 1; attempt <= 3; attempt += 1) {
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), REQUEST_TIMEOUT_MS);
+
+    try {
+      const response = await fetch(source.url, {
+        signal: controller.signal,
+        headers: {
+          "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/138.0.0.0 Safari/537.36",
+          Accept: "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
+          "Accept-Language": "zh-TW,zh;q=0.9,en;q=0.8",
+          "Cache-Control": "no-cache",
+        },
+      });
+
+      if (!response.ok) {
+        const error = new Error(`HTTP ${response.status} ${response.statusText}`);
+        if (!RETRYABLE_STATUS_CODES.has(response.status) || attempt === 3) throw error;
+        lastError = error;
+      } else {
+        const html = await response.text();
+        if (!html.trim()) throw new Error("HTML 回應內容為空");
+        return html;
+      }
+    } catch (error) {
+      lastError = error;
+      if (attempt === 3) throw error;
+    } finally {
+      clearTimeout(timeout);
+    }
+
+    console.warn(`${source.name} 抓取第 ${attempt} 次失敗，準備重試。`);
+    await sleep(700 * attempt);
+  }
+
+  throw lastError ?? new Error("HTML 抓取失敗");
+}
+
+function buildNewsItem({ source, title, description, sourceUrl, publishedAt }) {
+  const category = classifyNews(title, description || source.category, source.name);
+  const importanceScore = getImportanceScore(title, description, source.name);
+
+  return {
+    title,
+    summary: buildSummary({ source: source.name, title, category }),
+    content: buildContent({ source: source.name, title, category, sourceUrl }),
+    category,
+    source: source.name,
+    source_url: sourceUrl,
+    published_at: publishedAt,
+    status: "published",
+    importance_score: importanceScore,
+    is_breaking: isBreakingNews(title, importanceScore),
+    tags: [source.name, "AI 情報", category],
+  };
+}
+
+function parseBriefAi(html, source) {
+  const $ = cheerio.load(html);
+  const seen = new Set();
+  const items = [];
+
+  $('a[href*="/p/"]').each((_, element) => {
+    if (items.length >= sourceItemLimit(source)) return false;
+
+    const href = $(element).attr("href");
+    if (!href) return;
+    const sourceUrl = normalizeUrl(new URL(href, source.url).toString());
+    if (!new URL(sourceUrl).pathname.startsWith("/p/") || seen.has(sourceUrl)) return;
+
+    const rawTitle = text($(element).text());
+    if (!rawTitle || /subscribe|advertis|合作|訂閱/i.test(rawTitle)) return;
+    seen.add(sourceUrl);
+
+    const dateMatch = rawTitle.match(/^(\d{4}-\d{2}-\d{2})\s*/);
+    const title = rawTitle.replace(/^\d{4}-\d{2}-\d{2}\s*/, "").trim();
+    items.push(buildNewsItem({
+      source,
+      title,
+      description: source.category,
+      sourceUrl,
+      publishedAt: toIsoDate(dateMatch?.[1]),
+    }));
+  });
+
+  return items;
+}
+
+function parseAiBaseDaily(html, source) {
+  const $ = cheerio.load(html);
+  const seen = new Set();
+  const items = [];
+
+  $('a[href*="/tw/daily/"]').each((_, element) => {
+    if (items.length >= sourceItemLimit(source)) return false;
+
+    const href = $(element).attr("href");
+    if (!href) return;
+    const resolvedUrl = new URL(href, source.url);
+    if (!/^\/tw\/daily\/\d+\/?$/.test(resolvedUrl.pathname)) return;
+
+    const sourceUrl = normalizeUrl(resolvedUrl.toString());
+    if (seen.has(sourceUrl)) return;
+
+    const title = text($(element).find("img[alt]").first().attr("alt") || $(element).find(".font600").first().text());
+    if (!title) return;
+    seen.add(sourceUrl);
+
+    const description = text($(element).find(".truncate2").first().text()) || source.category;
+    items.push(buildNewsItem({
+      source,
+      title,
+      description,
+      sourceUrl,
+      publishedAt: new Date().toISOString(),
+    }));
+  });
+
+  return items;
+}
+
+function parseHtml(html, source) {
+  if (source.parser === "brief-ai-archive") return parseBriefAi(html, source);
+  if (source.parser === "aibase-daily") return parseAiBaseDaily(html, source);
+  throw new Error(`未支援的 HTML parser：${source.parser ?? "未設定"}`);
+}
+
 function parseRss(xml, source) {
   const itemBlocks = xml.match(/<item[\s\S]*?<\/item>/gi) ?? [];
   const entryBlocks = xml.match(/<entry[\s\S]*?<\/entry>/gi) ?? [];
@@ -199,28 +343,13 @@ function parseRss(xml, source) {
     throw new Error("RSS 格式錯誤：找不到 item 或 entry");
   }
 
-  return blocks.slice(0, MAX_ITEMS_PER_SOURCE).map((block) => {
+  return blocks.slice(0, sourceItemLimit(source)).map((block) => {
     const isAtom = /^<entry/i.test(block.trim());
     const title = text(tag(block, "title"));
     const description = text(tag(block, "description") || tag(block, "summary") || tag(block, "content"));
     const sourceUrl = normalizeUrl(extractItemLink(block, isAtom));
     const publishedAt = toIsoDate(tag(block, "pubDate") || tag(block, "published") || tag(block, "updated"));
-    const category = classifyNews(title, description || source.category, source.name);
-    const importanceScore = getImportanceScore(title, description, source.name);
-
-    return {
-      title,
-      summary: buildSummary({ source: source.name, title, category }),
-      content: buildContent({ source: source.name, title, category, sourceUrl }),
-      category,
-      source: source.name,
-      source_url: sourceUrl,
-      published_at: publishedAt,
-      status: "published",
-      importance_score: importanceScore,
-      is_breaking: isBreakingNews(title, importanceScore),
-      tags: [source.name, "AI 情報", category],
-    };
+    return buildNewsItem({ source, title, description, sourceUrl, publishedAt });
   }).filter((item) => item.title && item.source_url);
 }
 
@@ -321,8 +450,8 @@ async function collectSource({ source, supabase, columns }) {
   };
 
   try {
-    const xml = await fetchRss(source);
-    const items = parseRss(xml, source);
+    const sourceBody = source.type === "rss" ? await fetchRss(source) : await fetchHtml(source);
+    const items = source.type === "rss" ? parseRss(sourceBody, source) : parseHtml(sourceBody, source);
     result.fetchedItems = items.length;
     console.log(`${source.name} 抓到 ${items.length} 筆可處理資料。`);
 
