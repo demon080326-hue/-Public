@@ -65,7 +65,7 @@ export async function getCurrentMemberContext(
 
   const { data, error } = await supabase
     .from("profiles")
-    .select("user_id, email, display_name, role, email_verified, points_balance, created_at, updated_at")
+    .select("user_id, email, display_name, role, email_verified, points_balance, current_tier, highest_tier, minimum_tier, lifetime_earned_points, lifetime_redeemed_points, total_valid_spend, last_valid_purchase_at, downgrade_exempt, upgrade_disabled, account_status, created_at, updated_at")
     .eq("user_id", user.id)
     .maybeSingle();
 

@@ -1,147 +1,285 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useMemo, useState } from "react";
+import { useRouter } from "next/navigation";
+import { useMemo, useState } from "react";
 import { useSiteLanguage } from "@/hooks/use-site-language";
 import type { AuthUserSummary } from "@/lib/auth-user";
+import { getTierLabel, getTierProgress } from "@/lib/member-tier";
 import { translateSiteText } from "@/lib/site-language";
+import type { MemberPointsLedgerRow, MemberTierSettingsRow, ProfileRow } from "@/types/database";
 
-type PointRecord = {
-  id: string;
-  label: string;
-  amount: number;
-  date: string;
+type MemberHubProps = {
+  user: AuthUserSummary;
+  profile: ProfileRow;
+  ledger: MemberPointsLedgerRow[];
+  tierSettings: MemberTierSettingsRow[];
+  dailyClaimedToday: boolean;
+  streakDays: number;
 };
 
-type PointProfile = {
-  points: number;
-  dailyClaimedOn: string | null;
-  weeklyClaimedOn: string | null;
-  records: PointRecord[];
+type CheckinResult = {
+  ok?: boolean;
+  reason?: string;
+  claimed?: boolean;
+  already_claimed?: boolean;
+  daily_points?: number;
+  streak_bonus_points?: number;
+  streak_days?: number;
+  points_balance?: number;
+  lifetime_earned_points?: number;
+  current_tier?: ProfileRow["current_tier"];
+  highest_tier?: ProfileRow["highest_tier"];
+  minimum_tier?: ProfileRow["minimum_tier"];
 };
 
-const legacyStorageKey = "james-member-mvp-v2";
-const dailyPoints = 10;
-const weeklyPoints = 30;
+const futureFeatures = [
+  {
+    title: "商品收藏",
+    body: "未來會用來收藏喜歡的工具包或商品；第 9 階段只標記為未來功能。",
+  },
+  {
+    title: "訂單紀錄",
+    body: "正式金流上線後才會建立訂單紀錄；目前不假造購買資料。",
+  },
+  {
+    title: "點數折抵",
+    body: "點數折抵會等正式商城與規則完成後再開放，本階段不能折抵。",
+  },
+  {
+    title: "平民專屬活動",
+    body: "活動報名與管理會放在後續階段，現在先顯示暫未開放。",
+  },
+];
 
-function taipeiDate() {
-  return new Intl.DateTimeFormat("en-CA", { timeZone: "Asia/Taipei" }).format(new Date());
+function formatDateTime(value: string | null) {
+  if (!value) return "尚無紀錄";
+  return new Intl.DateTimeFormat("zh-TW", {
+    timeZone: "Asia/Taipei",
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+    hour: "2-digit",
+    minute: "2-digit",
+  }).format(new Date(value));
 }
 
-function weekKey(date: Date) {
-  const parts = new Intl.DateTimeFormat("en-CA", { timeZone: "Asia/Taipei", year: "numeric", month: "2-digit", day: "2-digit" })
-    .formatToParts(date)
-    .reduce<Record<string, string>>((result, part) => ({ ...result, [part.type]: part.value }), {});
-  const utcDate = new Date(Date.UTC(Number(parts.year), Number(parts.month) - 1, Number(parts.day)));
-  const day = utcDate.getUTCDay() || 7;
-  utcDate.setUTCDate(utcDate.getUTCDate() - day + 1);
-  return utcDate.toISOString().slice(0, 10);
-}
-
-function storageKey(userId: string) {
-  return `james-member-points-mvp-v3:${userId}`;
-}
-
-function emptyProfile(): PointProfile {
-  return { points: 0, dailyClaimedOn: null, weeklyClaimedOn: null, records: [] };
-}
-
-function normalizeProfile(value: Partial<PointProfile> | null): PointProfile {
-  return {
-    points: Number(value?.points ?? 0),
-    dailyClaimedOn: value?.dailyClaimedOn ?? null,
-    weeklyClaimedOn: value?.weeklyClaimedOn ?? null,
-    records: Array.isArray(value?.records) ? value.records : [],
+function sourceLabel(sourceType: MemberPointsLedgerRow["source_type"]) {
+  const labels: Record<MemberPointsLedgerRow["source_type"], string> = {
+    daily_checkin: "每日簽到",
+    streak_bonus_7_days: "連續 7 天簽到獎勵",
+    monthly_full_checkin_bonus: "整月簽到獎勵（未開放）",
+    yearly_full_checkin_bonus: "整年簽到獎勵（未開放）",
+    purchase_reward: "購買回饋（未開放）",
+    admin_adjustment: "管理員調整（未開放）",
+    redemption: "點數兌換（未開放）",
+    refund_reversal: "退款回沖（未開放）",
+    migration: "系統轉移",
   };
+  return labels[sourceType] ?? sourceType;
 }
 
-function readProfile(user: AuthUserSummary): PointProfile {
-  try {
-    const current = JSON.parse(localStorage.getItem(storageKey(user.id)) ?? "null") as Partial<PointProfile> | null;
-    if (current) return normalizeProfile(current);
-
-    const legacy = JSON.parse(localStorage.getItem(legacyStorageKey) ?? "null") as (Partial<PointProfile> & { email?: string }) | null;
-    if (legacy?.email?.toLowerCase() === user.email.toLowerCase()) return normalizeProfile(legacy);
-    return emptyProfile();
-  } catch {
-    return emptyProfile();
-  }
-}
-
-function saveProfile(userId: string, profile: PointProfile) {
-  localStorage.setItem(storageKey(userId), JSON.stringify(profile));
-}
-
-export function MemberHub({ user }: { user: AuthUserSummary }) {
+export function MemberHub({
+  user,
+  profile,
+  ledger,
+  tierSettings,
+  dailyClaimedToday,
+  streakDays,
+}: MemberHubProps) {
   const language = useSiteLanguage();
+  const router = useRouter();
   const t = (text: string) => translateSiteText(text, language);
-  const [profile, setProfile] = useState<PointProfile | null>(null);
-  const [notice, setNotice] = useState("點數 MVP 僅儲存在這台裝置，不可兌現或轉移。");
+  const [busy, setBusy] = useState(false);
+  const [notice, setNotice] = useState("會員點數已改為資料庫紀錄；每日簽到與 7 天連續獎勵會寫入 ledger。");
+  const [stats, setStats] = useState({
+    pointsBalance: profile.points_balance,
+    lifetimeEarnedPoints: profile.lifetime_earned_points,
+    currentTier: profile.current_tier,
+    highestTier: profile.highest_tier,
+    minimumTier: profile.minimum_tier,
+    dailyClaimedToday,
+    streakDays,
+  });
 
-  useEffect(() => {
-    const loadProfile = window.setTimeout(() => setProfile(readProfile(user)), 0);
-    return () => window.clearTimeout(loadProfile);
-  }, [user]);
+  const latestRecords = useMemo(() => ledger.slice(0, 8), [ledger]);
+  const tierProgress = getTierProgress({
+    role: profile.role,
+    emailVerified: profile.email_verified,
+    lifetimeEarnedPoints: stats.lifetimeEarnedPoints,
+    totalValidSpend: profile.total_valid_spend,
+    currentTier: stats.currentTier,
+    minimumTier: stats.minimumTier,
+    upgradeDisabled: profile.upgrade_disabled,
+  });
 
-  const today = taipeiDate();
-  const thisWeek = weekKey(new Date());
-  const canDailyClaim = Boolean(user.emailVerified && profile && profile.dailyClaimedOn !== today);
-  const canWeeklyClaim = Boolean(user.emailVerified && profile && profile.weeklyClaimedOn !== thisWeek);
-  const records = useMemo(() => profile?.records ?? [], [profile]);
-
-  function updateProfile(nextProfile: PointProfile) {
-    saveProfile(user.id, nextProfile);
-    setProfile(nextProfile);
-  }
-
-  function claimPoints(kind: "daily" | "weekly") {
-    if (!user.emailVerified || !profile) {
-      setNotice("請先完成正式 Email 確認，才能使用本機點數 MVP。");
+  async function claimDailyCheckin() {
+    if (!user.emailVerified || !profile.email_verified || profile.role === "pending_member") {
+      setNotice("正式會員完成 Email 驗證後，才能使用每日簽到。");
       return;
     }
-    const isDaily = kind === "daily";
-    const alreadyClaimed = isDaily ? profile.dailyClaimedOn === today : profile.weeklyClaimedOn === thisWeek;
-    if (alreadyClaimed) {
-      setNotice(isDaily ? "今天已完成簽到，明天再回來吧。" : "本週加點已領取，下週再回來吧。");
-      return;
+
+    setBusy(true);
+    setNotice("");
+    try {
+      const response = await fetch("/api/member/checkin", { method: "POST" });
+      const result = (await response.json().catch(() => null)) as CheckinResult | null;
+
+      if (!response.ok || !result?.ok) {
+        setNotice(result?.reason === "NOT_ELIGIBLE" ? "目前會員狀態尚未符合簽到資格。" : "簽到暫時無法完成，請稍後再試。");
+        return;
+      }
+
+      setStats((current) => ({
+        pointsBalance: Number(result.points_balance ?? current.pointsBalance),
+        lifetimeEarnedPoints: Number(result.lifetime_earned_points ?? current.lifetimeEarnedPoints),
+        currentTier: result.current_tier ?? current.currentTier,
+        highestTier: result.highest_tier ?? current.highestTier,
+        minimumTier: result.minimum_tier ?? current.minimumTier,
+        dailyClaimedToday: true,
+        streakDays: Number(result.streak_days ?? current.streakDays),
+      }));
+
+      if (result.already_claimed) {
+        setNotice("今天已經簽到過了，明天再回來領點數。");
+      } else {
+        const bonus = Number(result.streak_bonus_points ?? 0);
+        setNotice(bonus > 0 ? `簽到成功，獲得 +2 點，連續 7 天額外獲得 +${bonus} 點。` : "簽到成功，獲得 +2 點。");
+      }
+
+      router.refresh();
+    } catch {
+      setNotice("簽到暫時無法完成，請稍後再試。");
+    } finally {
+      setBusy(false);
     }
-    const amount = isDaily ? dailyPoints : weeklyPoints;
-    const record: PointRecord = {
-      id: `${kind}-${Date.now()}`,
-      label: isDaily ? "每日簽到" : "每週加點",
-      amount,
-      date: today,
-    };
-    updateProfile({
-      ...profile,
-      points: profile.points + amount,
-      dailyClaimedOn: isDaily ? today : profile.dailyClaimedOn,
-      weeklyClaimedOn: isDaily ? profile.weeklyClaimedOn : thisWeek,
-      records: [record, ...profile.records].slice(0, 12),
-    });
-    setNotice(isDaily ? `每日簽到成功，已增加 ${dailyPoints} 點。` : `每週加點成功，已增加 ${weeklyPoints} 點。`);
   }
 
   return (
     <div className="member-points-mvp">
-        <div className="member-hub-heading member-points-heading">
-          <span className="tag">LOCAL POINTS MVP</span>
-          <h2>{t("目前點數")}</h2>
-          <p>{t("點數 MVP 僅儲存在這台裝置，不可兌現或轉移。")}</p>
-        </div>
-        <p className="member-hub-notice" role="status">{t(notice)}</p>
+      <div className="member-hub-heading member-points-heading">
+        <span className="tag">DATABASE POINTS MVP</span>
+        <h2>{t("會員點數與階級")}</h2>
+        <p>{t("第 9 階段已將點數改為資料庫紀錄，先開放每日簽到、7 天連續簽到基礎判定與會員階級顯示。")}</p>
+      </div>
+      <p className="member-hub-notice" role="status">{t(notice)}</p>
 
-        <div className="member-points-grid">
-          <article className="member-hub-card points-card"><span>{t("目前點數")}</span><strong>{profile?.points ?? 0}</strong><small>{t("點數 MVP 僅儲存在這台裝置，不可兌現或轉移。")}</small></article>
-          <article className="member-hub-card"><h2>{t("每日簽到")}</h2><p>{profile?.dailyClaimedOn === today ? t("今天已簽到") : t("今天尚未簽到")}</p><button className="btn" type="button" disabled={!canDailyClaim} onClick={() => claimPoints("daily")}>{profile?.dailyClaimedOn === today ? t("今日已簽到") : t("每日簽到 +10")}</button></article>
-          <article className="member-hub-card"><h2>{t("每週加點")}</h2><p>{profile?.weeklyClaimedOn === thisWeek ? t("本週已領取") : t("本週尚未領取")}</p><button className="btn secondary" type="button" disabled={!canWeeklyClaim} onClick={() => claimPoints("weekly")}>{profile?.weeklyClaimedOn === thisWeek ? t("本週已加點") : t("每週加點 +30")}</button></article>
-        </div>
+      <div className="member-points-grid">
+        <article className="member-hub-card points-card">
+          <span>{t("可使用點數")}</span>
+          <strong>{stats.pointsBalance}</strong>
+          <small>{t("由 member_points_ledger 產生，不再使用 localStorage 假解鎖。")}</small>
+        </article>
+        <article className="member-hub-card">
+          <h2>{t("目前階級")}</h2>
+          <p className="member-tier-name">{getTierLabel(stats.currentTier)}</p>
+          <small>{t(`tier key：${stats.currentTier}`)}</small>
+        </article>
+        <article className="member-hub-card">
+          <h2>{t("歷史累積點數")}</h2>
+          <p className="member-tier-name">{stats.lifetimeEarnedPoints}</p>
+          <small>{t("階級升級使用 lifetime_earned_points，不會因未來兌換而降低。")}</small>
+        </article>
+      </div>
 
-        <div className="member-hub-grid">
-          <article className="member-hub-card"><h2>{t("點數紀錄")}</h2>{records.length ? <ul className="point-records">{records.map((record) => <li key={record.id}><span>{t(record.label)}</span><strong>+{record.amount}</strong><small>{record.date}</small></li>)}</ul> : <p>{t("尚無點數紀錄。完成驗證後可以每日簽到與每週加點。")}</p>}</article>
-          <article className="member-hub-card"><h2>{t("可兌換商品")}</h2><p>{t("商品待研究。目前不提供實體商品、物流、金流或點數兌換。")}</p><span className="member-placeholder">{t("商品待研究")}</span></article>
-          <article className="member-hub-card"><h2>{t("會員可瀏覽")}</h2><p>{t("一般會員可查看公開內容；AI 情報、工具與文章不需要付費解鎖。")}</p><div className="member-hub-links"><Link href="/news">{t("AI 情報中心")}</Link><Link href="/tools">{t("AI 工具")}</Link><Link href="/articles">{t("學習文章")}</Link></div></article>
+      <div className="member-points-grid member-tier-grid">
+        <article className="member-hub-card">
+          <h2>{t("最高到達階級")}</h2>
+          <p>{getTierLabel(stats.highestTier)}</p>
+          <small>{t(`tier key：${stats.highestTier}`)}</small>
+        </article>
+        <article className="member-hub-card">
+          <h2>{t("最低保護階級")}</h2>
+          <p>{getTierLabel(stats.minimumTier)}</p>
+          <small>{t("有效消費達 2,000 後，未來最低保護階級會是商人。")}</small>
+        </article>
+        <article className="member-hub-card">
+          <h2>{t("有效消費累積")}</h2>
+          <p>NT$ {profile.total_valid_spend.toLocaleString("zh-TW")}</p>
+          <small>{t(`最近有效購買：${formatDateTime(profile.last_valid_purchase_at)}`)}</small>
+        </article>
+      </div>
+
+      <div className="member-hub-grid">
+        <article className="member-hub-card">
+          <h2>{t("每日簽到")}</h2>
+          <p>{stats.dailyClaimedToday ? t("今天已完成簽到。") : t("今天還沒簽到，可以領取 +2 點。")}</p>
+          <button className="btn" type="button" disabled={busy || stats.dailyClaimedToday} onClick={claimDailyCheckin}>
+            {busy ? t("簽到中...") : stats.dailyClaimedToday ? t("今日已簽到") : t("每日簽到 +2")}
+          </button>
+        </article>
+        <article className="member-hub-card">
+          <h2>{t("連續簽到 7 天")}</h2>
+          <p>{t(`目前連續 ${Math.min(stats.streakDays, 7)} / 7 天。連續 7 天可額外獲得 +5 點。`)}</p>
+          <div className="member-streak-meter" aria-label={t("連續簽到進度")}>
+            <span style={{ width: `${Math.min(stats.streakDays, 7) / 7 * 100}%` }} />
+          </div>
+        </article>
+        <article className="member-hub-card">
+          <h2>{t("下一階級")}</h2>
+          {tierProgress ? (
+            <p>{t(`下一階級：${getTierLabel(tierProgress.nextTier)}，目前 ${tierProgress.current.toLocaleString("zh-TW")} / ${tierProgress.target.toLocaleString("zh-TW")}。`)}</p>
+          ) : (
+            <p>{t("目前已達自動升級範圍的最高階級；皇親以上為 manual-only，後續階段再規劃。")}</p>
+          )}
+        </article>
+      </div>
+
+      <div className="member-hub-grid">
+        <article className="member-hub-card">
+          <h2>{t("點數紀錄")}</h2>
+          {latestRecords.length ? (
+            <ul className="point-records">
+              {latestRecords.map((record) => (
+                <li key={record.id}>
+                  <span>{t(record.note || sourceLabel(record.source_type))}</span>
+                  <strong>{record.amount > 0 ? `+${record.amount}` : record.amount}</strong>
+                  <small>{formatDateTime(record.created_at)} · {t(`餘額 ${record.balance_after}`)}</small>
+                </li>
+              ))}
+            </ul>
+          ) : (
+            <p>{t("目前還沒有點數紀錄。完成每日簽到後，這裡會出現 ledger 紀錄。")}</p>
+          )}
+        </article>
+        <article className="member-hub-card">
+          <h2>{t("階級設定")}</h2>
+          <ul className="member-tier-list">
+            {tierSettings.map((tier) => (
+              <li key={tier.tier_key}>
+                <span>{tier.tier_name}</span>
+                <small>{tier.is_manual_only ? t("手動授權") : t("自動判定")}</small>
+              </li>
+            ))}
+          </ul>
+        </article>
+        <article className="member-hub-card">
+          <h2>{t("站內入口")}</h2>
+          <p>{t("你可以繼續看 AI 情報、工具與文章；商城購買與解鎖仍暫未開放。")}</p>
+          <div className="member-hub-links">
+            <Link href="/news">{t("AI 情報")}</Link>
+            <Link href="/tools">{t("AI 工具")}</Link>
+            <Link href="/articles">{t("學習文章")}</Link>
+          </div>
+        </article>
+      </div>
+
+      <div className="member-hub-card member-future-card">
+        <div>
+          <span className="tag">FUTURE FEATURES</span>
+          <h2>{t("平民階級未來功能")}</h2>
+          <p>{t("以下功能本階段不建立資料表、不建立 API，也不提供正式操作；全部標記為暫未開放。")}</p>
         </div>
+        <div className="member-future-grid">
+          {futureFeatures.map((feature) => (
+            <article key={feature.title}>
+              <strong>{t(feature.title)}</strong>
+              <span>{t("⬜ 暫未開放，後續階段再做。")}</span>
+              <p>{t(feature.body)}</p>
+            </article>
+          ))}
+        </div>
+      </div>
     </div>
   );
 }

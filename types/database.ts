@@ -50,6 +50,27 @@ export type AiNewsRow = {
 };
 
 export type MemberRole = "pending_member" | "member" | "admin" | "owner";
+export type MemberTierKey = "super_poor" | "poor" | "commoner" | "merchant" | "noble" | "royal_citizen" | "royal_relative" | "royal_direct" | "king";
+export type MemberAccountStatus = "normal" | "suspended" | "restricted";
+export type MemberPointsSourceType =
+  | "daily_checkin"
+  | "streak_bonus_7_days"
+  | "monthly_full_checkin_bonus"
+  | "yearly_full_checkin_bonus"
+  | "purchase_reward"
+  | "admin_adjustment"
+  | "redemption"
+  | "refund_reversal"
+  | "migration";
+export type MemberTierHistoryReason =
+  | "signup"
+  | "email_verified"
+  | "points_upgrade"
+  | "spend_upgrade"
+  | "inactivity_downgrade"
+  | "manual_adjustment"
+  | "refund_recalculation"
+  | "restore_after_purchase";
 
 export type ProfileRow = {
   user_id: string;
@@ -58,8 +79,55 @@ export type ProfileRow = {
   role: MemberRole;
   email_verified: boolean;
   points_balance: number;
+  current_tier: MemberTierKey;
+  highest_tier: MemberTierKey;
+  minimum_tier: MemberTierKey;
+  lifetime_earned_points: number;
+  lifetime_redeemed_points: number;
+  total_valid_spend: number;
+  last_valid_purchase_at: string | null;
+  downgrade_exempt: boolean;
+  upgrade_disabled: boolean;
+  account_status: MemberAccountStatus;
   created_at: string;
   updated_at: string;
+};
+
+export type MemberTierSettingsRow = {
+  id: string;
+  tier_key: MemberTierKey;
+  tier_name: string;
+  sort_order: number;
+  required_valid_spend: number;
+  required_lifetime_points: number;
+  is_manual_only: boolean;
+  is_active: boolean;
+  created_at: string;
+  updated_at: string;
+};
+
+export type MemberTierHistoryRow = {
+  id: string;
+  user_id: string;
+  old_tier: MemberTierKey | null;
+  new_tier: MemberTierKey;
+  reason: MemberTierHistoryReason;
+  changed_by: string | null;
+  metadata: Json;
+  created_at: string;
+};
+
+export type MemberPointsLedgerRow = {
+  id: string;
+  user_id: string;
+  amount: number;
+  balance_after: number;
+  lifetime_earned_after: number;
+  source_type: MemberPointsSourceType;
+  note: string | null;
+  checkin_date: string | null;
+  metadata: Json;
+  created_at: string;
 };
 
 export type AuthSecurityStateRow = {
@@ -117,6 +185,24 @@ export type Database = {
         Row: ProfileRow;
         Insert: Partial<ProfileRow> & Pick<ProfileRow, "user_id">;
         Update: Pick<Partial<ProfileRow>, "display_name">;
+        Relationships: [];
+      };
+      member_tier_settings: {
+        Row: MemberTierSettingsRow;
+        Insert: Partial<MemberTierSettingsRow> & Pick<MemberTierSettingsRow, "tier_key" | "tier_name" | "sort_order">;
+        Update: Partial<MemberTierSettingsRow>;
+        Relationships: [];
+      };
+      member_tier_history: {
+        Row: MemberTierHistoryRow;
+        Insert: Partial<MemberTierHistoryRow> & Pick<MemberTierHistoryRow, "user_id" | "new_tier" | "reason">;
+        Update: Partial<MemberTierHistoryRow>;
+        Relationships: [];
+      };
+      member_points_ledger: {
+        Row: MemberPointsLedgerRow;
+        Insert: Partial<MemberPointsLedgerRow> & Pick<MemberPointsLedgerRow, "user_id" | "amount" | "balance_after" | "lifetime_earned_after" | "source_type">;
+        Update: Partial<MemberPointsLedgerRow>;
         Relationships: [];
       };
       auth_security_state: {
@@ -186,6 +272,10 @@ export type Database = {
       sync_own_profile_from_auth: {
         Args: Record<PropertyKey, never>;
         Returns: ProfileRow[];
+      };
+      claim_member_daily_checkin: {
+        Args: { p_user_id: string };
+        Returns: Json;
       };
       record_auth_security_event: {
         Args: { p_user_id: string | null; p_event_type: string; p_metadata?: Json };

@@ -7,7 +7,7 @@ import { useSiteLanguage } from "@/hooks/use-site-language";
 import type { AuthUserSummary } from "@/lib/auth-user";
 import { getSupabaseBrowserClient } from "@/lib/supabase/browser";
 import type { SiteLanguage } from "@/lib/site-language";
-import type { AuthSecurityStateRow, ProfileRow } from "@/types/database";
+import type { AuthSecurityStateRow, MemberPointsLedgerRow, MemberTierSettingsRow, ProfileRow } from "@/types/database";
 
 type AuthMode = "login" | "register" | "forgot";
 
@@ -19,6 +19,10 @@ type MemberAuthHubProps = {
   securityStatus?: "ready" | "missing" | "error" | null;
   initialNotice?: "admin-auth-required" | "auth_callback_failed" | "auth-unavailable" | "email-verified-member" | "email-verification-required" | "reverification-required" | "reverification-passed" | null;
   showPoints?: boolean;
+  pointsLedger?: MemberPointsLedgerRow[];
+  tierSettings?: MemberTierSettingsRow[];
+  dailyClaimedToday?: boolean;
+  streakDays?: number;
 };
 
 const copy = {
@@ -46,7 +50,7 @@ const copy = {
     displayName: "顯示名稱",
     displayNameEmpty: "尚未設定",
     databasePoints: "資料庫點數欄位",
-    databasePointsHint: "點數目前尚未資料庫化，下一階段才會處理正式點數紀錄",
+    databasePointsHint: "已由資料庫 ledger 記錄",
     profileVerification: "Profile email_verified",
     activationStatus: "會員啟用狀態",
     activationEmailPending: "請先到信箱完成 Email 驗證",
@@ -118,7 +122,7 @@ const copy = {
     displayName: "Display name",
     displayNameEmpty: "Not set",
     databasePoints: "Database points field",
-    databasePointsHint: "Points are not database-backed yet; the formal ledger is planned for the next phase",
+    databasePointsHint: "Backed by the database ledger",
     profileVerification: "Profile email_verified",
     activationStatus: "Membership activation",
     activationEmailPending: "Confirm your email before activating membership",
@@ -190,7 +194,7 @@ const copy = {
     displayName: "表示名",
     displayNameEmpty: "未設定",
     databasePoints: "データベースのポイント欄",
-    databasePointsHint: "ポイントは未データベース化です。正式な履歴は次の段階で対応します",
+    databasePointsHint: "データベース台帳で記録されています",
     profileVerification: "プロフィール email_verified",
     activationStatus: "会員の有効化状態",
     activationEmailPending: "メール確認を完了してください",
@@ -253,7 +257,19 @@ function maskEmail(email: string) {
   return `${visible}${"*".repeat(Math.max(3, Math.min(name.length - 1, 8)))}@${domain}`;
 }
 
-export function MemberAuthHub({ initialUser, initialProfile = null, profileStatus = null, initialSecurityState = null, securityStatus = null, initialNotice, showPoints = false }: MemberAuthHubProps) {
+export function MemberAuthHub({
+  initialUser,
+  initialProfile = null,
+  profileStatus = null,
+  initialSecurityState = null,
+  securityStatus = null,
+  initialNotice,
+  showPoints = false,
+  pointsLedger = [],
+  tierSettings = [],
+  dailyClaimedToday = false,
+  streakDays = 0,
+}: MemberAuthHubProps) {
   const language = useSiteLanguage();
   const text = copy[language];
   const router = useRouter();
@@ -551,7 +567,16 @@ export function MemberAuthHub({ initialUser, initialProfile = null, profileStatu
         )}
 
         {notice && <p className="member-hub-notice" role="status">{notice}</p>}
-        {initialUser && showPoints && <MemberHub user={initialUser} />}
+        {initialUser && initialProfile && showPoints && (
+          <MemberHub
+            user={initialUser}
+            profile={initialProfile}
+            ledger={pointsLedger}
+            tierSettings={tierSettings}
+            dailyClaimedToday={dailyClaimedToday}
+            streakDays={streakDays}
+          />
+        )}
       </div>
     </section>
   );
