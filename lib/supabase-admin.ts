@@ -6,9 +6,16 @@ import type { Database } from "@/types/database";
 
 let client: SupabaseClient<Database> | undefined;
 
+function readServerRuntimeEnv(name: string) {
+  const value = process.env[name];
+  return typeof value === "string" && value.trim() ? value.trim() : undefined;
+}
+
 export function getSupabaseAdminClient() {
-  const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
-  const serviceRoleKey = process.env.SUPABASE_SECRET_KEY || process.env.SUPABASE_SERVICE_ROLE_KEY;
+  const url = readServerRuntimeEnv("NEXT_PUBLIC_SUPABASE_URL");
+  const serviceRoleKey =
+    readServerRuntimeEnv("SUPABASE_SECRET_KEY") ||
+    readServerRuntimeEnv("SUPABASE_SERVICE_ROLE_KEY");
 
   if (!url || !serviceRoleKey) {
     console.error("Supabase admin client unavailable: server environment is incomplete.", {
