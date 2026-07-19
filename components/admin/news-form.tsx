@@ -48,7 +48,7 @@ export function NewsForm() {
       try {
         result = (await response.json()) as ApiResult;
       } catch {
-        setError(`API 錯誤：伺服器回傳非 JSON 資料（HTTP ${response.status}）。`);
+        setError(`API 回應不是有效 JSON。HTTP ${response.status}`);
         return;
       }
 
@@ -60,7 +60,7 @@ export function NewsForm() {
       setSuccess({ id: result.id });
       event.currentTarget.reset();
     } catch {
-      setError("無法連線到新增 API，請確認本機開發伺服器仍在運行。");
+      setError("無法連線到管理 API，請確認登入狀態與網路連線。");
     } finally {
       setIsSubmitting(false);
     }
@@ -70,13 +70,13 @@ export function NewsForm() {
     return (
       <div className="rounded-2xl border border-[var(--line)] bg-white p-6 shadow-sm">
         <h2 className="text-2xl font-black text-[var(--accent-dark)]">新增成功</h2>
-        <p className="mt-3 text-[var(--muted)]">AI 情報已寫入 Supabase，前台重新整理後即可看到。</p>
+        <p className="mt-3 text-[var(--muted)]">AI 情報已寫入 Supabase。你可以到前台列表與詳細頁確認顯示結果。</p>
         <div className="mt-6 flex flex-wrap gap-3">
           <Link className="rounded-lg bg-[var(--accent)] px-4 py-2 font-bold text-white" href="/news">
-            查看前台 AI 情報列表
+            查看 AI 情報列表
           </Link>
           <Link className="rounded-lg border border-[var(--line)] px-4 py-2 font-bold" href={`/news/${success.id}`}>
-            查看剛新增的文章
+            查看新增文章
           </Link>
         </div>
       </div>
@@ -86,7 +86,7 @@ export function NewsForm() {
   return (
     <form className="space-y-5 rounded-2xl border border-[var(--line)] bg-white p-6 shadow-sm" onSubmit={handleSubmit}>
       <div className="rounded-lg border border-amber-200 bg-amber-50 p-4 text-sm text-amber-900">
-        此後台目前僅限本機開發使用；正式部署前需要加入登入驗證。
+        此表單僅限 admin / owner 使用。Production 寫入目前仍維持安全關閉，避免誤改正式資料。
       </div>
 
       <label className="block font-bold">
@@ -100,14 +100,14 @@ export function NewsForm() {
       </label>
 
       <label className="block font-bold">
-        內文
+        內容
         <textarea className="mt-2 min-h-56 w-full rounded-lg border border-[var(--line)] px-3 py-2" name="content" required maxLength={20000} />
       </label>
 
       <div className="grid gap-5 sm:grid-cols-2">
         <label className="block font-bold">
           分類
-          <input className="mt-2 w-full rounded-lg border border-[var(--line)] px-3 py-2" name="category" defaultValue="AI 平台" maxLength={100} />
+          <input className="mt-2 w-full rounded-lg border border-[var(--line)] px-3 py-2" name="category" defaultValue="AI 情報" maxLength={100} />
         </label>
         <label className="block font-bold">
           來源名稱
@@ -125,7 +125,9 @@ export function NewsForm() {
         <input className="mt-2 w-full rounded-lg border border-[var(--line)] px-3 py-2" name="image_url" type="url" placeholder="https://example.com/news-image.jpg" />
       </label>
 
-      <p className="text-sm text-[var(--muted)]">目前資料表沒有發布狀態欄位；送出後會立即發布並顯示在前台。原始來源網址在資料表中必須是唯一值。</p>
+      <p className="text-sm text-[var(--muted)]">
+        tags 與 ai_score 暫由後端預設或後續流程處理；此表單只負責安全地送出 AI 情報基本欄位。
+      </p>
 
       {error ? <pre className="whitespace-pre-wrap rounded-lg border border-red-200 bg-red-50 p-3 text-sm text-red-800">{error}</pre> : null}
 

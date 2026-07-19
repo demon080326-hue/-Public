@@ -1,15 +1,14 @@
 import { redirect } from "next/navigation";
 import { AdminAccessNotice } from "@/components/admin-access-notice";
-import { getCurrentMemberContext, hasAdminAccess, isSecurityAccessBlocked } from "@/lib/member-profile";
+import { CmsDashboard } from "@/components/cms-dashboard";
+import { requireAdminAccess } from "@/lib/admin-access";
 
 export const dynamic = "force-dynamic";
 
 export default async function AdminPage() {
-  const member = await getCurrentMemberContext();
-  if (!member) redirect("/login");
-  if (isSecurityAccessBlocked(member)) {
-    redirect(member.securityState?.requires_reverification ? "/login?notice=reverification-required" : "/login?error=auth-unavailable");
-  }
-  const role = member.profile?.role ?? null;
-  return <AdminAccessNotice page="dashboard" role={role} accessGranted={hasAdminAccess(role)} />;
+  const access = await requireAdminAccess();
+  if (access.status === "unauthenticated") redirect("/login?notice=admin-auth-required");
+  if (access.status !== "allowed") return <AdminAccessNotice page="dashboard" state={access} />;
+
+  return <CmsDashboard />;
 }

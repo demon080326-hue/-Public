@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { parseAiNewsPayload } from "@/lib/ai-news";
-import { getCurrentMemberContext, hasAdminAccess, isSecurityAccessBlocked } from "@/lib/member-profile";
+import { requireAdminAccess } from "@/lib/admin-access";
 import { getSupabaseAdminClient } from "@/lib/supabase-admin";
 
 export const runtime = "nodejs";
@@ -17,16 +17,30 @@ function errorResponse(status: number, error: Omit<ApiError, "ok">) {
   return NextResponse.json({ ok: false, ...error } satisfies ApiError, { status });
 }
 
+function adminAccessCode(status: string) {
+  if (status === "profile_missing") return "PROFILE_MISSING";
+  if (status === "email_unverified") return "EMAIL_UNVERIFIED";
+  if (status === "reverification_required") return "REVERIFICATION_REQUIRED";
+  return "ADMIN_REQUIRED";
+}
+
+function adminAccessMessage(status: string) {
+  if (status === "profile_missing") return "找不到會員 Profile，請先回會員中心同步帳號狀態。";
+  if (status === "email_unverified") return "請先完成 Email 驗證後再使用管理功能。";
+  if (status === "reverification_required") return "請先完成 Email 6 位數重新驗證。";
+  return "此功能僅限 admin / owner 使用。";
+}
+
 export async function POST(request: Request) {
-  const member = await getCurrentMemberContext();
-  if (!member) {
+  const access = await requireAdminAccess();
+  if (access.status === "unauthenticated") {
     return errorResponse(401, { message: "請先登入管理員帳號。", code: "AUTH_REQUIRED" });
   }
-  if (isSecurityAccessBlocked(member)) {
-    return errorResponse(403, { message: "請先完成 Email 重新驗證。", code: "REVERIFICATION_REQUIRED" });
-  }
-  if (!hasAdminAccess(member.profile?.role)) {
-    return errorResponse(403, { message: "此功能僅限管理員使用。", code: "ADMIN_REQUIRED" });
+  if (access.status !== "allowed") {
+    return errorResponse(403, {
+      message: adminAccessMessage(access.status),
+      code: adminAccessCode(access.status),
+    });
   }
 
   let body: Record<string, unknown>;
@@ -34,15 +48,17 @@ export async function POST(request: Request) {
   try {
     body = (await request.json()) as Record<string, unknown>;
   } catch {
-    return errorResponse(400, { message: "送出資料格式錯誤，請重新填寫表單。", code: "INVALID_JSON" });
+    return errorResponse(400, { message: "送出的資料不是有效 JSON，請重新整理後再試。", code: "INVALID_JSON" });
   }
 
   if (process.env.NODE_ENV === "production") {
-    return errorResponse(403, { message: "此本機 CMS 尚未啟用正式登入驗證，正式環境禁止直接新增。", code: "CMS_LOCAL_ONLY" });
+    return errorResponse(403, { message: "Production 的 CMS 寫入暫未開放，請先使用本機管理流程測試。", code: "CMS_LOCAL_ONLY" });
   }
 
   const parsed = parseAiNewsPayload(body);
-  if (!parsed.data) return errorResponse(400, { message: parsed.error ?? "資料表欄位不符合。", code: "VALIDATION_ERROR" });
+  if (!parsed.data) {
+    return errorResponse(400, { message: parsed.error ?? "資料格式不符合 AI 情報欄位要求。", code: "VALIDATION_ERROR" });
+  }
 
   if (!process.env.NEXT_PUBLIC_SUPABASE_URL) {
     return errorResponse(500, { message: "缺少 NEXT_PUBLIC_SUPABASE_URL。", code: "ENV_MISSING" });
@@ -90,7 +106,7 @@ export async function POST(request: Request) {
   } catch (error) {
     console.error("Create AI news failed:", error);
     return errorResponse(500, {
-      message: error instanceof Error ? error.message : "新增 AI 情報時發生未預期錯誤。",
+      message: error instanceof Error ? error.message : "新增 AI 情報時發生未知錯誤。",
       code: "UNEXPECTED_ERROR",
     });
   }
