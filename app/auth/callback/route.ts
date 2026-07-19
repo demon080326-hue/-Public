@@ -58,10 +58,11 @@ async function completeAuthCallback({
 }) {
   const nextPath = safeNextPath(requestUrl.searchParams.get("next"));
   const loginUrl = new URL("/login", requestUrl.origin);
+  const isRecovery = type === "recovery" || nextPath === "/reset-password";
 
   if (!code && !(tokenHash && type)) {
     logCallbackFailure("missing_credentials");
-    loginUrl.searchParams.set("error", "auth_callback_failed");
+    loginUrl.searchParams.set("error", isRecovery ? "recovery_failed" : "auth_callback_failed");
     return noStoreRedirect(loginUrl, redirectStatus);
   }
 
@@ -78,7 +79,8 @@ async function completeAuthCallback({
 
   if (error) {
     logCallbackFailure(code ? "exchange_code" : "verify_token_hash", error);
-    loginUrl.searchParams.set("error", "auth_callback_failed");
+    const message = typeof error.message === "string" ? error.message.toLowerCase() : "";
+    loginUrl.searchParams.set("error", isRecovery && message.includes("expired") ? "recovery_expired" : isRecovery ? "recovery_failed" : "auth_callback_failed");
     return noStoreRedirect(loginUrl, redirectStatus);
   }
 

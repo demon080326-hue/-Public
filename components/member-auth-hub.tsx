@@ -17,7 +17,7 @@ type MemberAuthHubProps = {
   profileStatus?: "ready" | "missing" | "error" | null;
   initialSecurityState?: AuthSecurityStateRow | null;
   securityStatus?: "ready" | "missing" | "error" | null;
-  initialNotice?: "admin-auth-required" | "auth_callback_failed" | "auth-unavailable" | "email-verified-member" | "email-verification-required" | "reverification-required" | "reverification-passed" | null;
+  initialNotice?: "admin-auth-required" | "auth_callback_failed" | "auth-unavailable" | "email-verified-member" | "email-verification-required" | "reverification-required" | "reverification-passed" | "password-updated" | "recovery_failed" | "recovery_expired" | null;
   showPoints?: boolean;
   pointsLedger?: MemberPointsLedgerRow[];
   tierSettings?: MemberTierSettingsRow[];
@@ -67,6 +67,9 @@ const copy = {
     registerHint: "密碼至少 12 個字元。系統會由 Supabase Auth 寄出確認信。",
     forgotHint: "輸入 Email 後，若帳號存在，系統會寄出重設密碼通知。",
     resetGeneric: "如果這個 Email 已註冊，我們會寄出重設密碼通知。",
+    passwordUpdated: "密碼已更新，請使用新密碼登入。",
+    recoveryFailed: "重設密碼連結已失效，請重新申請。",
+    recoveryExpired: "重設密碼連結已過期，請重新申請。",
     signupSent: "驗證信已寄出，請到信箱完成驗證後再登入。",
     passwordMismatch: "兩次輸入的密碼不一致，請重新確認。",
     passwordLength: "密碼至少需要 12 個字元。",
@@ -139,6 +142,9 @@ const copy = {
     registerHint: "Use at least 12 characters. Supabase Auth will send the confirmation email.",
     forgotHint: "Enter your email. If the account exists, a password reset notice will be sent.",
     resetGeneric: "If this email is registered, we will send password reset instructions.",
+    passwordUpdated: "Your password has been updated. Please sign in with the new password.",
+    recoveryFailed: "This reset link is no longer valid. Please request a new one.",
+    recoveryExpired: "This reset link has expired. Please request a new one.",
     signupSent: "Registration submitted. Confirm your email before signing in.",
     passwordMismatch: "The passwords do not match.",
     passwordLength: "Use at least 12 characters.",
@@ -211,6 +217,9 @@ const copy = {
     registerHint: "12文字以上で設定してください。確認メールは Supabase Auth から送信されます。",
     forgotHint: "メールを入力してください。登録済みの場合は再設定案内が送信されます。",
     resetGeneric: "登録済みのメールの場合、パスワード再設定の案内を送信します。",
+    passwordUpdated: "パスワードを更新しました。新しいパスワードでログインしてください。",
+    recoveryFailed: "再設定リンクは無効です。もう一度申請してください。",
+    recoveryExpired: "再設定リンクの有効期限が切れています。もう一度申請してください。",
     signupSent: "登録を受け付けました。メール確認後にログインしてください。",
     passwordMismatch: "パスワードが一致しません。",
     passwordLength: "パスワードは12文字以上必要です。",
@@ -289,6 +298,9 @@ export function MemberAuthHub({
     if (initialNotice === "email-verification-required") return text.activationEmailPending;
     if (initialNotice === "reverification-required") return text.reverificationRequired;
     if (initialNotice === "reverification-passed") return text.reverificationPassed;
+    if (initialNotice === "password-updated") return text.passwordUpdated;
+    if (initialNotice === "recovery_failed") return text.recoveryFailed;
+    if (initialNotice === "recovery_expired") return text.recoveryExpired;
     return "";
   });
   const requiresReverification = initialSecurityState?.requires_reverification === true;
@@ -451,8 +463,9 @@ export function MemberAuthHub({
     if (!supabase) return;
 
     setBusy(true);
+    const resetPasswordUrl = new URL("/reset-password", window.location.origin);
     await supabase.auth.resetPasswordForEmail(email.trim(), {
-      redirectTo: callbackUrl("/login"),
+      redirectTo: resetPasswordUrl.toString(),
     });
     setBusy(false);
     setNotice(text.resetGeneric);

@@ -20,16 +20,17 @@ export default async function ConfirmEmailPage({ searchParams }: ConfirmEmailPag
   const params = await searchParams;
   const tokenHash = first(params.token_hash);
   const type = first(params.type);
-  const next = first(params.next) ?? "/member";
+  const isRecovery = type === "recovery";
+  const next = first(params.next) ?? (isRecovery ? "/reset-password" : "/member");
   const validRequest = Boolean(tokenHash && type);
 
   return (
     <section className="member-hub-section auth-section">
       <div className="wrap member-hub">
         <div className="member-hub-heading">
-          <span className="tag">EMAIL CONFIRMATION</span>
-          <h1>確認你的 Email</h1>
-          <p>請按下按鈕完成信箱驗證。這個額外步驟可避免郵件預覽服務提前使用一次性驗證連結。</p>
+          <span className="tag">{isRecovery ? "PASSWORD RECOVERY" : "EMAIL CONFIRMATION"}</span>
+          <h1>{isRecovery ? "確認重設密碼" : "確認你的 Email"}</h1>
+          <p>{isRecovery ? "請按下按鈕啟用重設密碼流程。這個額外步驟可避免郵件預覽服務提前使用一次性連結。" : "請按下按鈕完成信箱驗證。這個額外步驟可避免郵件預覽服務提前使用一次性驗證連結。"}</p>
         </div>
 
         <article className="member-hub-card auth-user-card">
@@ -38,13 +39,13 @@ export default async function ConfirmEmailPage({ searchParams }: ConfirmEmailPag
               <input type="hidden" name="token_hash" value={tokenHash} />
               <input type="hidden" name="type" value={type} />
               <input type="hidden" name="next" value={next} />
-              <p>驗證完成後，你會前往會員中心。一次性連結若已過期，請回登入頁重新申請。</p>
-              <button className="btn" type="submit">確認 Email</button>
+              <p>{isRecovery ? "確認完成後，你會前往設定新密碼頁面。一次性連結若已過期，請回登入頁重新申請。" : "驗證完成後，你會前往會員中心。一次性連結若已過期，請回登入頁重新申請。"}</p>
+              <button className="btn" type="submit">{isRecovery ? "前往設定新密碼" : "確認 Email"}</button>
             </form>
           ) : (
             <div>
-              <h2>驗證連結無效</h2>
-              <p>這個連結缺少必要資料，請回登入頁重新註冊或申請驗證信。</p>
+              <h2>{isRecovery ? "重設連結無效" : "驗證連結無效"}</h2>
+              <p>{isRecovery ? "這個重設密碼連結缺少必要資料，請回登入頁重新申請。" : "這個連結缺少必要資料，請回登入頁重新註冊或申請驗證信。"}</p>
               <Link className="btn" href="/login">返回會員登入</Link>
             </div>
           )}
