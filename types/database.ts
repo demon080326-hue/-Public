@@ -72,6 +72,51 @@ export type MemberTierHistoryReason =
   | "refund_recalculation"
   | "restore_after_purchase";
 
+export type AdminAuditAction =
+  | "admin_news_create"
+  | "admin_news_update"
+  | "admin_news_delete"
+  | "member_points_adjust"
+  | "member_tier_adjust"
+  | "member_status_update"
+  | "product_create"
+  | "product_update"
+  | "product_delete"
+  | "order_update"
+  | "settings_update"
+  | "login_security_update"
+  | "manual_admin_action";
+
+export type AdminAuditResourceType =
+  | "ai_news"
+  | "profile"
+  | "member_points"
+  | "member_tier"
+  | "product"
+  | "order"
+  | "settings"
+  | "auth_security"
+  | "system";
+
+export type AdminAuditLogRow = {
+  id: string;
+  actor_user_id: string | null;
+  actor_email: string | null;
+  actor_role: string | null;
+  target_user_id: string | null;
+  target_email: string | null;
+  action: AdminAuditAction;
+  resource_type: AdminAuditResourceType;
+  resource_id: string | null;
+  before_data: Json | null;
+  after_data: Json | null;
+  reason: string | null;
+  ip_hash: string | null;
+  user_agent: string | null;
+  metadata: Json | null;
+  created_at: string;
+};
+
 export type ProfileRow = {
   user_id: string;
   email: string | null;
@@ -227,6 +272,12 @@ export type Database = {
         Row: EmailVerificationCodeRow;
         Insert: Partial<EmailVerificationCodeRow> & Pick<EmailVerificationCodeRow, "user_id" | "purpose" | "code_hash" | "expires_at">;
         Update: Partial<EmailVerificationCodeRow>;
+        Relationships: [];
+      };
+      admin_audit_logs: {
+        Row: AdminAuditLogRow;
+        Insert: Partial<AdminAuditLogRow> & Pick<AdminAuditLogRow, "action" | "resource_type">;
+        Update: never;
         Relationships: [];
       };
       ai_sources: {

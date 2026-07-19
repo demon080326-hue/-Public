@@ -1,5 +1,6 @@
 import { redirect } from "next/navigation";
 import { AdminAccessNotice } from "@/components/admin-access-notice";
+import { AdminAuditSummary } from "@/components/admin-audit-summary";
 import { CmsDashboard } from "@/components/cms-dashboard";
 import { requireAdminAccess } from "@/lib/admin-access";
 
@@ -10,5 +11,10 @@ export default async function DashboardPage() {
   if (access.status === "unauthenticated") redirect("/login?notice=admin-auth-required");
   if (access.status !== "allowed") return <AdminAccessNotice page="dashboard" state={access} />;
 
-  return <CmsDashboard />;
+  return (
+    <>
+      <CmsDashboard />
+      <AdminAuditSummary />
+    </>
+  );
 }

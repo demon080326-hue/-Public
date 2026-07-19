@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { parseAiNewsPayload } from "@/lib/ai-news";
 import { requireAdminAccess } from "@/lib/admin-access";
+import { writeAdminAuditLog } from "@/lib/admin-audit-log";
 import { getSupabaseAdminClient } from "@/lib/supabase-admin";
 
 export const runtime = "nodejs";
@@ -41,6 +42,10 @@ export async function POST(request: Request) {
       message: adminAccessMessage(access.status),
       code: adminAccessCode(access.status),
     });
+  }
+
+  if (!access.user || !access.role) {
+    return errorResponse(500, { message: "Admin identity is unavailable.", code: "ADMIN_IDENTITY_MISSING" });
   }
 
   let body: Record<string, unknown>;
@@ -89,7 +94,7 @@ export async function POST(request: Request) {
         tags: parsed.data.tags,
         ai_score: parsed.data.aiScore,
       })
-      .select("id")
+      .select("id,title,category,url,published_at,created_at")
       .single();
 
     if (error) {
@@ -101,6 +106,25 @@ export async function POST(request: Request) {
         code: error.code,
       });
     }
+
+    await writeAdminAuditLog({
+      actor: {
+        userId: access.user.id,
+        email: access.user.email,
+        role: access.role,
+      },
+      action: "admin_news_create",
+      resourceType: "ai_news",
+      resourceId: data.id,
+      afterData: {
+        title: data.title,
+        category: data.category,
+        url: data.url,
+        published_at: data.published_at,
+        created_at: data.created_at,
+      },
+      request,
+    });
 
     return NextResponse.json({ ok: true, id: data.id }, { status: 201 });
   } catch (error) {
