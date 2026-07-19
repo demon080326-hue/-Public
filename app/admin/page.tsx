@@ -1,6 +1,7 @@
 import { redirect } from "next/navigation";
 import { AdminAccessNotice } from "@/components/admin-access-notice";
 import { AdminAuditSummary } from "@/components/admin-audit-summary";
+import { AdminMemberLookupEntry } from "@/components/admin-member-lookup-entry";
 import { CmsDashboard } from "@/components/cms-dashboard";
 import { requireAdminAccess } from "@/lib/admin-access";
 
@@ -14,6 +15,7 @@ export default async function AdminPage() {
   return (
     <>
       <CmsDashboard />
+      <AdminMemberLookupEntry />
       <AdminAuditSummary />
     </>
   );
