@@ -17,7 +17,7 @@ type MemberAuthHubProps = {
   profileStatus?: "ready" | "missing" | "error" | null;
   initialSecurityState?: AuthSecurityStateRow | null;
   securityStatus?: "ready" | "missing" | "error" | null;
-  initialNotice?: "admin-auth-required" | "auth_callback_failed" | "auth-unavailable" | "email-verified-member" | "email-verification-required" | "reverification-required" | "reverification-passed" | "password-updated" | "recovery_failed" | "recovery_expired" | null;
+  initialNotice?: "admin-auth-required" | "auth_callback_failed" | "auth-unavailable" | "email-verified-member" | "email-verification-required" | "reverification-required" | "reverification-passed" | "password-updated" | "recovery-expired" | "recovery_failed" | "recovery_expired" | null;
   showPoints?: boolean;
   pointsLedger?: MemberPointsLedgerRow[];
   tierSettings?: MemberTierSettingsRow[];
@@ -69,7 +69,7 @@ const copy = {
     resetGeneric: "如果這個 Email 已註冊，我們會寄出重設密碼通知。",
     passwordUpdated: "密碼已更新，請使用新密碼登入。",
     recoveryFailed: "重設密碼連結已失效，請重新申請。",
-    recoveryExpired: "重設密碼連結已過期，請重新申請。",
+    recoveryExpired: "重設密碼連結已失效或過期，請重新申請忘記密碼。",
     signupSent: "驗證信已寄出，請到信箱完成驗證後再登入。",
     passwordMismatch: "兩次輸入的密碼不一致，請重新確認。",
     passwordLength: "密碼至少需要 12 個字元。",
@@ -299,6 +299,7 @@ export function MemberAuthHub({
     if (initialNotice === "reverification-required") return text.reverificationRequired;
     if (initialNotice === "reverification-passed") return text.reverificationPassed;
     if (initialNotice === "password-updated") return text.passwordUpdated;
+    if (initialNotice === "recovery-expired") return text.recoveryExpired;
     if (initialNotice === "recovery_failed") return text.recoveryFailed;
     if (initialNotice === "recovery_expired") return text.recoveryExpired;
     return "";

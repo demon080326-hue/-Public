@@ -26,6 +26,8 @@ export default async function LoginPage({ searchParams }: LoginPageProps) {
       ? noticeValue
     : noticeValue === "password-updated"
       ? noticeValue
+    : noticeValue === "recovery-expired"
+      ? noticeValue
     : errorValue === "auth_callback_failed" || errorValue === "auth-unavailable"
       ? errorValue
     : errorValue === "recovery_failed" || errorValue === "recovery_expired"
