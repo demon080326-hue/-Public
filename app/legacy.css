@@ -3005,3 +3005,122 @@ body.menu-open .site-menu { transform: translateX(0); }
     justify-self: stretch !important;
   }
 }
+
+/* Stage 12: admin-only available points adjustment. */
+.admin-points-adjust-panel {
+  margin-top: 18px;
+}
+
+.admin-points-adjust-form {
+  display: grid;
+  gap: 16px;
+  margin-top: 18px;
+}
+
+.admin-points-adjust-form fieldset,
+.admin-points-adjust-form label {
+  display: grid;
+  gap: 8px;
+}
+
+.admin-points-adjust-form fieldset {
+  margin: 0;
+  padding: 0;
+  border: 0;
+}
+
+.admin-points-adjust-form legend,
+.admin-points-adjust-form > label {
+  color: var(--text);
+  font-weight: 800;
+}
+
+.admin-points-type-options {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+
+.admin-points-type-options label {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  min-width: 120px;
+  padding: 11px 13px;
+  border: 1px solid var(--border);
+  background: #fff;
+}
+
+.admin-points-adjust-form input[type="number"],
+.admin-points-adjust-form textarea {
+  width: 100%;
+  border: 1px solid var(--border);
+  background: #fff;
+  color: var(--text);
+}
+
+.admin-points-adjust-form textarea {
+  resize: vertical;
+}
+
+.admin-points-adjust-form small {
+  color: var(--text-sub);
+  font-weight: 600;
+}
+
+.admin-points-preview {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.admin-points-preview span {
+  padding: 13px;
+  border: 1px solid var(--border);
+  background: #eef7f3;
+}
+
+.admin-points-preview strong {
+  display: block;
+  margin-top: 5px;
+  color: var(--accent-dark);
+  font-size: 1.35rem;
+}
+
+.admin-points-preview.is-invalid span {
+  border-color: #c24b4b;
+  background: #fff1f1;
+}
+
+.admin-points-warnings {
+  display: grid;
+  gap: 6px;
+  margin: 0;
+  padding-left: 20px;
+  color: var(--text-sub);
+}
+
+.admin-points-message {
+  margin: 0;
+  padding: 11px 13px;
+  border-left: 4px solid var(--accent);
+  background: #eef7f3;
+  color: var(--accent-dark);
+  font-weight: 750;
+}
+
+.admin-points-message.error {
+  border-color: #c24b4b;
+  background: #fff1f1;
+  color: #8d2f2f;
+}
+
+@media (max-width: 680px) {
+  .admin-points-preview {
+    grid-template-columns: 1fr;
+  }
+
+  .admin-points-adjust-form .btn {
+    width: 100%;
+  }
+}

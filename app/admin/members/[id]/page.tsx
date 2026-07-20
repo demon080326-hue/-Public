@@ -3,6 +3,7 @@ import Link from "next/link";
 import { redirect } from "next/navigation";
 import { AdminAccessNotice } from "@/components/admin-access-notice";
 import { AdminMemberDetail } from "@/components/admin-member-detail";
+import { AdminMemberPointsAdjust } from "@/components/admin-member-points-adjust";
 import { requireAdminAccess } from "@/lib/admin-access";
 import { getAdminMemberDetail, isValidProfileId, writeAdminMemberAuditSafely } from "@/lib/admin-members";
 import type { AdminMemberDetailResult } from "@/lib/admin-members";
@@ -57,10 +58,10 @@ export default async function AdminMemberDetailPage({ params }: AdminMemberDetai
           <p className="eyebrow">Admin Member Detail</p>
           <h1>會員詳細資料</h1>
           <p className="page-copy">{detail.member.email ?? "未提供 Email"} · {detail.member.role}</p>
-          <p className="admin-readonly-notice">此頁只顯示既有資料，不提供編輯、刪除、調點數或調階級功能。</p>
+          <p className="admin-readonly-notice">基本資料與階級維持唯讀；管理員可在下方安全調整會員可用點數。</p>
         </div>
       </section>
-      <section className="section admin-member-section"><div className="wrap"><AdminMemberDetail detail={detail} /></div></section>
+      <section className="section admin-member-section"><div className="wrap"><AdminMemberDetail detail={detail} /><AdminMemberPointsAdjust memberId={detail.member.user_id} currentPoints={detail.member.points_balance} /></div></section>
     </>
   );
 }

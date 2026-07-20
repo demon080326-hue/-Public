@@ -328,6 +328,17 @@ export type Database = {
         Args: { p_user_id: string };
         Returns: Json;
       };
+      admin_adjust_member_points: {
+        Args: {
+          p_target_user_id: string;
+          p_adjustment_type: "add" | "deduct";
+          p_points: number;
+          p_reason: string;
+          p_actor_user_id: string;
+          p_actor_email: string | null;
+        };
+        Returns: Json;
+      };
       record_auth_security_event: {
         Args: { p_user_id: string | null; p_event_type: string; p_metadata?: Json };
         Returns: string;
