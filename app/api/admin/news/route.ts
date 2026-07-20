@@ -56,10 +56,6 @@ export async function POST(request: Request) {
     return errorResponse(400, { message: "送出的資料不是有效 JSON，請重新整理後再試。", code: "INVALID_JSON" });
   }
 
-  if (process.env.NODE_ENV === "production") {
-    return errorResponse(403, { message: "Production 的 CMS 寫入暫未開放，請先使用本機管理流程測試。", code: "CMS_LOCAL_ONLY" });
-  }
-
   const parsed = parseAiNewsPayload(body);
   if (!parsed.data) {
     return errorResponse(400, { message: parsed.error ?? "資料格式不符合 AI 情報欄位要求。", code: "VALIDATION_ERROR" });
