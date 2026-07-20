@@ -339,6 +339,17 @@ export type Database = {
         };
         Returns: Json;
       };
+      admin_adjust_member_tier: {
+        Args: {
+          p_target_user_id: string;
+          p_target_tier: MemberTierKey;
+          p_reason: string;
+          p_actor_user_id: string;
+          p_actor_email: string | null;
+          p_actor_role: MemberRole;
+        };
+        Returns: Json;
+      };
       record_auth_security_event: {
         Args: { p_user_id: string | null; p_event_type: string; p_metadata?: Json };
         Returns: string;

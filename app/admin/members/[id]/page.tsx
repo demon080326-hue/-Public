@@ -4,6 +4,7 @@ import { redirect } from "next/navigation";
 import { AdminAccessNotice } from "@/components/admin-access-notice";
 import { AdminMemberDetail } from "@/components/admin-member-detail";
 import { AdminMemberPointsAdjust } from "@/components/admin-member-points-adjust";
+import { AdminMemberTierAdjust } from "@/components/admin-member-tier-adjust";
 import { requireAdminAccess } from "@/lib/admin-access";
 import { getAdminMemberDetail, isValidProfileId, writeAdminMemberAuditSafely } from "@/lib/admin-members";
 import type { AdminMemberDetailResult } from "@/lib/admin-members";
@@ -18,6 +19,7 @@ export default async function AdminMemberDetailPage({ params }: AdminMemberDetai
   const access = await requireAdminAccess();
   if (access.status === "unauthenticated") redirect("/login?notice=admin-auth-required");
   if (access.status !== "allowed") return <AdminAccessNotice page="dashboard" state={access} />;
+  if (!access.role) return <MemberLookupError message="無法確認管理員身分，請重新登入後再試。" />;
 
   const { id } = await params;
   if (!isValidProfileId(id)) {
@@ -61,7 +63,19 @@ export default async function AdminMemberDetailPage({ params }: AdminMemberDetai
           <p className="admin-readonly-notice">基本資料與階級維持唯讀；管理員可在下方安全調整會員可用點數。</p>
         </div>
       </section>
-      <section className="section admin-member-section"><div className="wrap"><AdminMemberDetail detail={detail} /><AdminMemberPointsAdjust memberId={detail.member.user_id} currentPoints={detail.member.points_balance} /></div></section>
+      <section className="section admin-member-section">
+        <div className="wrap">
+          <AdminMemberDetail detail={detail} />
+          <AdminMemberPointsAdjust memberId={detail.member.user_id} currentPoints={detail.member.points_balance} />
+          <AdminMemberTierAdjust
+            memberId={detail.member.user_id}
+            currentTier={detail.member.current_tier}
+            highestTier={detail.member.highest_tier}
+            minimumTier={detail.member.minimum_tier}
+            actorRole={access.role}
+          />
+        </div>
+      </section>
     </>
   );
 }

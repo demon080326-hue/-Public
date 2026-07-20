@@ -26,6 +26,44 @@ export const MEMBER_TIER_LABELS: Record<MemberTierKey, string> = {
 
 export const MANUAL_ONLY_TIERS: MemberTierKey[] = ["royal_relative", "royal_direct", "king"];
 
+// Stage 13: every legal tier ordered low -> high, reusing the shared tier order
+// so this list can never drift from the rest of the app.
+export const ADMIN_TIER_KEYS = (Object.keys(MEMBER_TIER_ORDER) as MemberTierKey[]).sort(
+  (a, b) => MEMBER_TIER_ORDER[a] - MEMBER_TIER_ORDER[b],
+);
+
+// High-privilege royal tiers that only an owner may assign. admin may assign the rest.
+export const OWNER_ONLY_TIER_KEYS: MemberTierKey[] = ["royal_relative", "royal_direct", "king"];
+
+export type AdminTierOption = {
+  key: MemberTierKey;
+  label: string;
+  ownerOnly: boolean;
+};
+
+export function isMemberTierKey(value: unknown): value is MemberTierKey {
+  return typeof value === "string" && (ADMIN_TIER_KEYS as string[]).includes(value);
+}
+
+export function isOwnerOnlyTier(tier: MemberTierKey): boolean {
+  return OWNER_ONLY_TIER_KEYS.includes(tier);
+}
+
+export function getAdminTierOptions(): AdminTierOption[] {
+  return ADMIN_TIER_KEYS.map((key) => ({
+    key,
+    label: getTierLabel(key),
+    ownerOnly: isOwnerOnlyTier(key),
+  }));
+}
+
+// admin can assign the six general tiers; owner can assign everything.
+export function canActorAssignTier(role: MemberRole, tier: MemberTierKey): boolean {
+  if (role === "owner") return true;
+  if (role === "admin") return !isOwnerOnlyTier(tier);
+  return false;
+}
+
 export type TierCalculationInput = {
   role?: MemberRole | null;
   emailVerified?: boolean | null;

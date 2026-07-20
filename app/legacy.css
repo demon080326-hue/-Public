@@ -3124,3 +3124,21 @@ body.menu-open .site-menu { transform: translateX(0); }
     width: 100%;
   }
 }
+
+/* Stage 13: admin-only member tier adjustment. */
+.admin-tier-adjust-panel {
+  margin-top: 18px;
+}
+
+.admin-points-adjust-form select.form-input {
+  width: 100%;
+  padding: 11px 13px;
+  border: 1px solid var(--border);
+  background: #fff;
+  color: var(--text);
+  font: inherit;
+}
+
+.admin-points-adjust-form select.form-input:disabled {
+  opacity: 0.6;
+}
