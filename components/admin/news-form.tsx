@@ -86,7 +86,7 @@ export function NewsForm() {
   return (
     <form className="space-y-5 rounded-2xl border border-[var(--line)] bg-white p-6 shadow-sm" onSubmit={handleSubmit}>
       <div className="rounded-lg border border-amber-200 bg-amber-50 p-4 text-sm text-amber-900">
-        此表單僅限 admin / owner 使用。Production 寫入目前仍維持安全關閉，避免誤改正式資料。
+        此表單僅限 admin / owner 使用。Production 寫入會保留欄位驗證與管理操作紀錄。
       </div>
 
       <label className="block font-bold">
