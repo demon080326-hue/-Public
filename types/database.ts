@@ -72,6 +72,10 @@ export type MemberTierHistoryReason =
   | "refund_recalculation"
   | "restore_after_purchase";
 
+export type ProductType = "course" | "digital" | "physical" | "service" | "food" | "other";
+export type ProductStatus = "draft" | "published" | "archived";
+export type ProductStockStatus = "in_stock" | "out_of_stock" | "preorder" | "unlimited";
+
 export type AdminAuditAction =
   | "admin_news_create"
   | "admin_news_update"
@@ -81,6 +85,7 @@ export type AdminAuditAction =
   | "member_status_update"
   | "product_create"
   | "product_update"
+  | "product_archive"
   | "product_delete"
   | "order_update"
   | "settings_update"
@@ -115,6 +120,30 @@ export type AdminAuditLogRow = {
   user_agent: string | null;
   metadata: Json | null;
   created_at: string;
+};
+
+export type ProductRow = {
+  id: string;
+  slug: string;
+  name: string;
+  subtitle: string | null;
+  description: string | null;
+  product_type: ProductType;
+  category: string | null;
+  price_cents: number;
+  compare_at_price_cents: number | null;
+  currency: string;
+  image_url: string | null;
+  status: ProductStatus;
+  stock_status: ProductStockStatus;
+  inventory_quantity: number | null;
+  is_featured: boolean;
+  sort_order: number;
+  metadata: Json;
+  created_by: string | null;
+  updated_by: string | null;
+  created_at: string;
+  updated_at: string;
 };
 
 export type ProfileRow = {
@@ -230,6 +259,12 @@ export type Database = {
         Row: ProfileRow;
         Insert: Partial<ProfileRow> & Pick<ProfileRow, "user_id">;
         Update: Pick<Partial<ProfileRow>, "display_name">;
+        Relationships: [];
+      };
+      products: {
+        Row: ProductRow;
+        Insert: Partial<ProductRow> & Pick<ProductRow, "slug" | "name">;
+        Update: Partial<ProductRow>;
         Relationships: [];
       };
       member_tier_settings: {
