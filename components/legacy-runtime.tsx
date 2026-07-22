@@ -24,6 +24,7 @@ const searchItems = [
   ["會員中心", "會員與社群", "會員 登入 James AI Club", "/login"],
   ["ChatGPT Agent 入門指南", "ChatGPT", "Agent OpenAI 自動化", "/articles/chatgpt-agent"],
   ["Claude Fable 5 完整深度彙整", "Claude", "模型 Anthropic", "/articles/claude-fable-5"],
+  ["Claude 大祕寶：100 個提示詞短指令終極攻略", "Claude／Prompt", "Claude slash codes 隱藏指令 短指令 ghost deepthink redteam prompt", "/articles/claude-secret-codes-100"],
 ] as const;
 
 function readMember(): Member | null {
