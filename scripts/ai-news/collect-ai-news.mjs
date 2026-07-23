@@ -194,6 +194,18 @@ async function fetchRss(source) {
   }
 }
 
+function normalizeImageUrl(value, baseUrl) {
+  const raw = decodeEntities(String(value ?? "").trim());
+  if (!raw || raw.startsWith("data:")) return "";
+
+  try {
+    const url = new URL(raw, baseUrl);
+    return ["http:", "https:"].includes(url.protocol) ? url.toString() : "";
+  } catch {
+    return "";
+  }
+}
+
 function sourceItemLimit(source) {
   const configured = Number(source.maxItems ?? MAX_ITEMS_PER_SOURCE);
   return Number.isFinite(configured) && configured > 0 ? Math.floor(configured) : MAX_ITEMS_PER_SOURCE;
@@ -245,7 +257,7 @@ async function fetchHtml(source) {
   throw lastError ?? new Error("HTML 抓取失敗");
 }
 
-function buildNewsItem({ source, title, description, sourceUrl, publishedAt }) {
+function buildNewsItem({ source, title, description, sourceUrl, publishedAt, imageUrl = "" }) {
   const category = classifyNews(title, description || source.category, source.name);
   const importanceScore = getImportanceScore(title, description, source.name);
 
@@ -256,6 +268,7 @@ function buildNewsItem({ source, title, description, sourceUrl, publishedAt }) {
     category,
     source: source.name,
     source_url: sourceUrl,
+    image_url: normalizeImageUrl(imageUrl, sourceUrl),
     published_at: publishedAt,
     status: "published",
     importance_score: importanceScore,
@@ -283,12 +296,14 @@ function parseBriefAi(html, source) {
 
     const dateMatch = rawTitle.match(/^(\d{4}-\d{2}-\d{2})\s*/);
     const title = rawTitle.replace(/^\d{4}-\d{2}-\d{2}\s*/, "").trim();
+    const imageUrl = $(element).find("img").first().attr("src") || $(element).find("img").first().attr("data-src");
     items.push(buildNewsItem({
       source,
       title,
       description: source.category,
       sourceUrl,
       publishedAt: toIsoDate(dateMatch?.[1]),
+      imageUrl,
     }));
   });
 
@@ -316,12 +331,14 @@ function parseAiBaseDaily(html, source) {
     seen.add(sourceUrl);
 
     const description = text($(element).find(".truncate2").first().text()) || source.category;
+    const imageUrl = $(element).find("img").first().attr("src") || $(element).find("img").first().attr("data-src");
     items.push(buildNewsItem({
       source,
       title,
       description,
       sourceUrl,
       publishedAt: new Date().toISOString(),
+      imageUrl,
     }));
   });
 
@@ -349,7 +366,11 @@ function parseRss(xml, source) {
     const description = text(tag(block, "description") || tag(block, "summary") || tag(block, "content"));
     const sourceUrl = normalizeUrl(extractItemLink(block, isAtom));
     const publishedAt = toIsoDate(tag(block, "pubDate") || tag(block, "published") || tag(block, "updated"));
-    return buildNewsItem({ source, title, description, sourceUrl, publishedAt });
+    const mediaMatch = block.match(/<media:(?:content|thumbnail)\b[^>]*\burl=["']([^"']+)["']/i);
+    const enclosureMatch = block.match(/<enclosure\b(?=[^>]*\btype=["']image\/)[^>]*\burl=["']([^"']+)["']/i);
+    const inlineImageMatch = block.match(/<img\b[^>]*\bsrc=["']([^"']+)["']/i);
+    const imageUrl = mediaMatch?.[1] ?? enclosureMatch?.[1] ?? inlineImageMatch?.[1] ?? "";
+    return buildNewsItem({ source, title, description, sourceUrl, publishedAt, imageUrl });
   }).filter((item) => item.title && item.source_url);
 }
 
@@ -405,6 +426,7 @@ function buildInsertPayload(item, columns) {
   setIfExists("is_breaking", item.is_breaking);
   setIfExists("tags", item.tags);
   setIfExists("language", "zh-Hant");
+  setIfExists("image_url", item.image_url || null);
 
   return payload;
 }
@@ -413,7 +435,8 @@ async function findExistingByUrl(supabase, sourceUrl, columns) {
   const urlColumn = firstExisting(columns, ["source_url", "url", "canonical_url"]);
   if (!urlColumn) throw new Error("Supabase 去重查詢失敗：找不到 source_url、url 或 canonical_url 欄位");
 
-  const { data, error } = await supabase.from("ai_news").select("id").eq(urlColumn, sourceUrl).maybeSingle();
+  const selectColumns = columns.has("image_url") ? "id,image_url" : "id";
+  const { data, error } = await supabase.from("ai_news").select(selectColumns).eq(urlColumn, sourceUrl).maybeSingle();
   if (error) throw new Error(`Supabase 去重查詢失敗：${error.message}`);
 
   return data ? { id: data.id, column: urlColumn } : null;
@@ -446,6 +469,7 @@ async function collectSource({ source, supabase, columns }) {
     fetchedItems: 0,
     inserted: 0,
     skipped: 0,
+    updatedImages: 0,
     failedItems: 0,
   };
 
@@ -459,6 +483,15 @@ async function collectSource({ source, supabase, columns }) {
       try {
         const existing = await findExistingByUrl(supabase, item.source_url, columns);
         if (existing) {
+          if (columns.has("image_url") && item.image_url && !existing.image_url) {
+            const { error: updateError } = await supabase
+              .from("ai_news")
+              .update({ image_url: item.image_url })
+              .eq("id", existing.id);
+            if (updateError) throw updateError;
+            result.updatedImages += 1;
+            console.log(`updated image: ${item.title} (id=${existing.id})`);
+          }
           result.skipped += 1;
           console.log(`skipped: ${item.title} (${existing.column} already exists, id=${existing.id})`);
           continue;
@@ -508,6 +541,7 @@ async function main() {
     fetchedItems: 0,
     inserted: 0,
     skipped: 0,
+    updatedImages: 0,
     failedSources: [],
     failedItems: 0,
   };
@@ -519,6 +553,7 @@ async function main() {
     summary.fetchedItems += result.fetchedItems;
     summary.inserted += result.inserted;
     summary.skipped += result.skipped;
+    summary.updatedImages += result.updatedImages;
     summary.failedItems += result.failedItems;
 
     if (result.failedSource) {
@@ -531,6 +566,7 @@ async function main() {
   console.log(`fetched items: ${summary.fetchedItems}`);
   console.log(`inserted: ${summary.inserted}`);
   console.log(`skipped: ${summary.skipped}`);
+  console.log(`updated images: ${summary.updatedImages}`);
   console.log(`failed sources: ${summary.failedSources.length}`);
   if (summary.failedSources.length) {
     console.log(JSON.stringify(summary.failedSources, null, 2));
