@@ -75,6 +75,9 @@ export type MemberTierHistoryReason =
 export type ProductType = "course" | "digital" | "physical" | "service" | "food" | "other";
 export type ProductStatus = "draft" | "published" | "archived";
 export type ProductStockStatus = "in_stock" | "out_of_stock" | "preorder" | "unlimited";
+export type OrderStatus = "draft" | "pending_payment" | "paid" | "cancelled" | "refunded" | "fulfilled";
+export type OrderPaymentStatus = "unpaid" | "pending" | "paid" | "failed" | "refunded";
+export type OrderFulfillmentStatus = "unfulfilled" | "partial" | "fulfilled" | "cancelled";
 
 export type AdminAuditAction =
   | "admin_news_create"
@@ -144,6 +147,53 @@ export type ProductRow = {
   updated_by: string | null;
   created_at: string;
   updated_at: string;
+};
+
+export type OrderRow = {
+  id: string;
+  order_number: string;
+  user_id: string | null;
+  buyer_email: string | null;
+  status: OrderStatus;
+  payment_status: OrderPaymentStatus;
+  fulfillment_status: OrderFulfillmentStatus;
+  currency: string;
+  subtotal_cents: number;
+  discount_cents: number;
+  total_cents: number;
+  points_earned: number;
+  points_redeemed: number;
+  payment_provider: string | null;
+  payment_reference: string | null;
+  note: string | null;
+  metadata: Json;
+  created_at: string;
+  updated_at: string;
+};
+
+export type OrderItemRow = {
+  id: string;
+  order_id: string;
+  product_id: string | null;
+  product_name: string;
+  product_slug: string | null;
+  quantity: number;
+  unit_price_cents: number;
+  total_cents: number;
+  metadata: Json;
+  created_at: string;
+};
+
+export type OrderEventRow = {
+  id: string;
+  order_id: string;
+  actor_user_id: string | null;
+  event_type: string;
+  before_data: Json | null;
+  after_data: Json | null;
+  reason: string | null;
+  metadata: Json;
+  created_at: string;
 };
 
 export type ProfileRow = {
@@ -265,6 +315,24 @@ export type Database = {
         Row: ProductRow;
         Insert: Partial<ProductRow> & Pick<ProductRow, "slug" | "name">;
         Update: Partial<ProductRow>;
+        Relationships: [];
+      };
+      orders: {
+        Row: OrderRow;
+        Insert: Partial<OrderRow> & Pick<OrderRow, "order_number">;
+        Update: Partial<OrderRow>;
+        Relationships: [];
+      };
+      order_items: {
+        Row: OrderItemRow;
+        Insert: Partial<OrderItemRow> & Pick<OrderItemRow, "order_id" | "product_name">;
+        Update: Partial<OrderItemRow>;
+        Relationships: [];
+      };
+      order_events: {
+        Row: OrderEventRow;
+        Insert: Partial<OrderEventRow> & Pick<OrderEventRow, "order_id" | "event_type">;
+        Update: Partial<OrderEventRow>;
         Relationships: [];
       };
       member_tier_settings: {

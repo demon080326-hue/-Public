@@ -257,6 +257,7 @@ export function MemberHub({
           <h2>{t("站內入口")}</h2>
           <p>{t("你可以繼續看 AI 情報、工具與文章；商城購買與解鎖仍暫未開放。")}</p>
           <div className="member-hub-links">
+            <Link href="/member/orders">{t("我的訂單")}</Link>
             <Link href="/news">{t("AI 情報")}</Link>
             <Link href="/tools">{t("AI 工具")}</Link>
             <Link href="/articles">{t("學習文章")}</Link>
