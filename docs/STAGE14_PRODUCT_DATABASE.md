@@ -93,6 +93,15 @@
 1. 先套用 migration `20260721100000_stage14_products.sql`（`supabase db push` 或 SQL Editor）。
 2. 再部署前端。migration 未套用前，`/shop` 顯示空狀態、admin 商品 API 會回 503/500，但不影響其他頁面與 build。
 
-## 10. 下一階段建議
+## 10. Production 收尾狀態
+
+- `20260721100000_stage14_products.sql` 已套用至 Production。
+- `public.products` 已啟用 RLS，公開端只可讀取 `published` 商品。
+- 商品建立、發布、封存與 `/shop` 顯示生命週期已完成 Production 驗收。
+- `product_create`、`product_update`、`product_archive` 均已寫入 `admin_audit_logs`。
+- 驗收商品保留為 `archived`，沒有硬刪除資料。
+- `20260723233648_stage14_product_actor_indexes.sql` 已補上 `created_by`、`updated_by` 外鍵索引，Supabase Advisor 不再回報 products 外鍵缺少索引。
+
+## 11. 下一階段建議
 
 第 15 階段可規劃：商品明細頁（`/shop/[slug]`）、精選商品排序策略，並開始設計訂單資料表與 server-side checkout 的邊界（仍不接金流），為之後的點數折抵與下載解鎖預留欄位。
