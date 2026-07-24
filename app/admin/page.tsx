@@ -3,6 +3,7 @@ import { AdminAccessNotice } from "@/components/admin-access-notice";
 import { AdminAuditSummary } from "@/components/admin-audit-summary";
 import { AdminMemberLookupEntry } from "@/components/admin-member-lookup-entry";
 import { AdminOrdersEntry } from "@/components/admin-orders-entry";
+import { AdminPaymentsEntry } from "@/components/admin-payments-entry";
 import { AdminProductsEntry } from "@/components/admin-products-entry";
 import { CmsDashboard } from "@/components/cms-dashboard";
 import { requireAdminAccess } from "@/lib/admin-access";
@@ -20,6 +21,7 @@ export default async function AdminPage() {
       <AdminMemberLookupEntry />
       <AdminProductsEntry />
       <AdminOrdersEntry />
+      <AdminPaymentsEntry />
       <AdminAuditSummary />
     </>
   );

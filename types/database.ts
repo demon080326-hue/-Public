@@ -78,6 +78,18 @@ export type ProductStockStatus = "in_stock" | "out_of_stock" | "preorder" | "unl
 export type OrderStatus = "draft" | "pending_payment" | "paid" | "cancelled" | "refunded" | "fulfilled";
 export type OrderPaymentStatus = "unpaid" | "pending" | "paid" | "failed" | "refunded";
 export type OrderFulfillmentStatus = "unfulfilled" | "partial" | "fulfilled" | "cancelled";
+export type PaymentProvider = "disabled" | "mock" | "ecpay" | "line_pay" | "manual";
+export type PaymentMode = "disabled" | "test" | "live";
+export type PaymentSessionStatus =
+  | "created"
+  | "pending"
+  | "authorized"
+  | "paid"
+  | "failed"
+  | "cancelled"
+  | "expired"
+  | "refunded";
+export type PaymentWebhookEventStatus = "received" | "processed" | "ignored" | "failed";
 
 export type AdminAuditAction =
   | "admin_news_create"
@@ -194,6 +206,55 @@ export type OrderEventRow = {
   reason: string | null;
   metadata: Json;
   created_at: string;
+};
+
+export type PaymentSessionRow = {
+  id: string;
+  order_id: string;
+  user_id: string | null;
+  provider: PaymentProvider;
+  mode: PaymentMode;
+  status: PaymentSessionStatus;
+  amount_cents: number;
+  currency: string;
+  provider_session_id: string | null;
+  provider_payment_url: string | null;
+  idempotency_key: string;
+  expires_at: string | null;
+  metadata: Json;
+  created_at: string;
+  updated_at: string;
+};
+
+export type PaymentEventRow = {
+  id: string;
+  payment_session_id: string;
+  order_id: string;
+  event_type: string;
+  before_status: string | null;
+  after_status: string | null;
+  amount_cents: number | null;
+  provider: string | null;
+  provider_event_id: string | null;
+  reason: string | null;
+  metadata: Json;
+  created_at: string;
+};
+
+export type PaymentWebhookEventRow = {
+  id: string;
+  provider: string;
+  provider_event_id: string;
+  event_type: string;
+  received_at: string;
+  processed_at: string | null;
+  status: PaymentWebhookEventStatus;
+  order_id: string | null;
+  payment_session_id: string | null;
+  payload: Json;
+  error_message: string | null;
+  idempotency_key: string | null;
+  metadata: Json;
 };
 
 export type ProfileRow = {
@@ -333,6 +394,24 @@ export type Database = {
         Row: OrderEventRow;
         Insert: Partial<OrderEventRow> & Pick<OrderEventRow, "order_id" | "event_type">;
         Update: Partial<OrderEventRow>;
+        Relationships: [];
+      };
+      payment_sessions: {
+        Row: PaymentSessionRow;
+        Insert: Partial<PaymentSessionRow> & Pick<PaymentSessionRow, "order_id" | "idempotency_key">;
+        Update: Partial<PaymentSessionRow>;
+        Relationships: [];
+      };
+      payment_events: {
+        Row: PaymentEventRow;
+        Insert: Partial<PaymentEventRow> & Pick<PaymentEventRow, "payment_session_id" | "order_id" | "event_type">;
+        Update: Partial<PaymentEventRow>;
+        Relationships: [];
+      };
+      payment_webhook_events: {
+        Row: PaymentWebhookEventRow;
+        Insert: Partial<PaymentWebhookEventRow> & Pick<PaymentWebhookEventRow, "provider" | "provider_event_id" | "event_type">;
+        Update: Partial<PaymentWebhookEventRow>;
         Relationships: [];
       };
       member_tier_settings: {
@@ -484,6 +563,10 @@ export type Database = {
       cancel_email_verification_code: {
         Args: { p_code_id: string; p_user_id: string; p_purpose: string };
         Returns: boolean;
+      };
+      create_disabled_checkout_session: {
+        Args: { p_order_id: string; p_user_id: string };
+        Returns: { payment_session_id: string; was_created: boolean }[];
       };
     };
     Enums: Record<string, never>;
